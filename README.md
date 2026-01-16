@@ -1,4 +1,4 @@
-# Fed Dashboard
+# Fed Dashboard 사용법 필독
 
 연준(Federal Reserve) H.4.1 대차대조표 데이터를 시각화하는 대시보드입니다.  
 **fed-public.zip** 파일만 다운로드 받으세요!
