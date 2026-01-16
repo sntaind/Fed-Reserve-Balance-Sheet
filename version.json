@@ -1,0 +1,9 @@
+{
+  "version": "v4.1.0",
+  "date": "2026-01-17",
+  "releaseNotes": [
+    "버전 체크 시스템 추가",
+    "최신 데이터 버튼 연준 페이지 링크로 변경"
+  ],
+  "downloadUrl": "https://github.com/sntaind/Fed-Reserve-Balance-Sheet/releases"
+}

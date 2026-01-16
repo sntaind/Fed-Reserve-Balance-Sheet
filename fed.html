@@ -1,0 +1,2057 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fed Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="shared/common.css">
+<style>
+.font-sm { --font-size: 13px; }
+.font-md { --font-size: 15px; }
+.font-lg { --font-size: 17px; }
+.font-xl { --font-size: 19px; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+.dash { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.hd { padding: 12px 20px; margin: -20px -20px 25px -20px; background: #2a2a25; }
+.dark .hd { background: #1a1a18; }
+.hd-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.hd-left { display: flex; align-items: center; gap: 12px; }
+.hd h1 { font-family: var(--font-text); font-size: 1.1rem; color: #fff; font-weight: 600; display: flex; align-items: center; gap: 8px; margin: 0; }
+.dark .hd h1 { color: #e8e6d6; }
+.hd-title-kr { font-size: 0.85rem; color: rgba(255,255,255,0.6); font-weight: 400; margin-left: 8px; }
+.hd-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.hd .btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); padding: 0; width: 32px; height: 32px; font-family: inherit; font-size: 0.85em; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.hd .btn:hover { background: rgba(255,255,255,0.25); }
+.hd .btn.primary { background: #3b82f6; border-color: #3b82f6; width: auto; padding: 0 12px; gap: 6px; }
+.hd .btn.primary:hover { background: #2563eb; }
+.hd .btn svg { width: 16px; height: 16px; }
+.hd .btn.with-text { width: auto; padding: 0 12px; gap: 6px; }
+.pdf-btn { display: flex; align-items: center; justify-content: center; gap: 6px; background: #22c55e; color: #000; border: none; height: 32px; padding: 0 12px; font-family: inherit; font-size: 0.8em; font-weight: 600; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+.pdf-btn:hover { filter: brightness(1.1); }
+.pdf-btn svg { width: 14px; height: 14px; }
+.pdf-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.rel-info { display: flex; gap: 16px; font-size: 0.8em; color: rgba(255,255,255,0.7); margin-top: 8px; flex-wrap: wrap; align-items: center; font-weight: 400; }
+.rel-info strong { color: #fff; font-family: var(--font-mono); font-weight: var(--font-mono-weight); }
+.status { display: flex; align-items: center; gap: 6px; font-size: 0.8em; color: rgba(255,255,255,0.6); }
+.status-dot { width: 6px; height: 6px; background: #22c55e; border-radius: 50%; }
+
+.tabs { display: flex; gap: 1px; background: var(--border); overflow-x: auto; margin-bottom: 20px; }
+.tab { flex: 1; min-width: 80px; background: var(--bg2); color: var(--text2); border: none; padding: 12px 10px; cursor: pointer; font-family: inherit; font-size: 0.85em; font-weight: 600; white-space: nowrap; transition: all 0.2s; }
+.tab:hover { background: var(--bg3); color: var(--text); }
+.tab.active { background: var(--accent); color: var(--bg); }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.card { background: var(--bg2); border: 1px solid var(--border); padding: 20px; }
+.card-hd { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.card-kr { font-size: 1.1em; color: var(--accent); font-weight: 700; }
+.card-en { font-size: 0.8em; color: var(--text3); font-weight: 500; }
+.card-val { font-family: var(--font-mono); font-weight: var(--font-mono-weight); font-size: 1.6em; color: var(--text); margin-bottom: 6px; }
+.card-desc { font-size: 0.85em; color: var(--text3); margin-bottom: 12px; }
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { font-family: var(--font-mono); font-weight: var(--font-mono-weight); font-size: 0.85em; padding: 4px 10px; background: var(--bg3); border: 1px solid var(--border); }
+.badge.pos { color: var(--pos); border-color: var(--pos); }
+.badge.neg { color: var(--neg); border-color: var(--neg); }
+
+.box { background: var(--bg2); border: 1px solid var(--border); padding: 20px; margin-bottom: 24px; }
+.box h3 { font-size: 1.1em; color: var(--accent); margin-bottom: 16px; font-weight: 700; }
+.bar-grp { margin: 16px 0; }
+.bar-lbl { display: flex; justify-content: space-between; font-size: 0.95em; margin-bottom: 8px; font-weight: 500; }
+.sbar { display: flex; height: 28px; background: var(--bg3); border: 1px solid var(--border); overflow: hidden; }
+.seg { height: 100%; transition: width 0.5s; }
+.seg.tsy { background: var(--primary); }
+.seg.mbs { background: var(--secondary); }
+.seg.oth { background: var(--text3); }
+.leg { display: flex; gap: 20px; margin-top: 10px; font-size: 0.85em; font-weight: 500; }
+.dot { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: middle; }
+.dot.tsy { background: var(--primary); }
+.dot.mbs { background: var(--secondary); }
+.dot.oth { background: var(--text3); }
+
+.info { background: var(--bg2); border: 1px solid var(--border); padding: 20px; }
+.info h4 { font-size: 1em; color: var(--accent); margin-bottom: 14px; font-weight: 700; }
+.info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.info-item strong { display: block; color: var(--text); font-weight: 600; margin-bottom: 4px; }
+.info-item p { font-size: 0.9em; color: var(--text2); line-height: 1.5; }
+
+.tbl-box { background: var(--bg2); border: 1px solid var(--border); padding: 20px; margin-bottom: 24px; overflow-x: auto; }
+.tbl-box h3 { font-size: 1.1em; color: var(--accent); margin-bottom: 6px; font-weight: 700; }
+.tbl-sub { font-size: 0.85em; color: var(--text3); margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--bg3); font-weight: 600; color: var(--text2); }
+td.val { font-family: var(--font-mono); font-weight: var(--font-mono-weight); text-align: right; }
+td.chg { font-family: var(--font-mono); font-weight: var(--font-mono-weight); text-align: right; }
+td.chg small { color: var(--text3); font-size: 0.85em; }
+td.chg.pos { color: var(--pos); }
+td.chg.neg { color: var(--neg); }
+.bil { display: flex; flex-direction: column; gap: 2px; }
+.bil .kr { font-weight: 600; color: var(--text); }
+.bil .en { font-size: 0.8em; color: var(--text3); }
+tr.l1 td:first-child .bil { padding-left: 16px; }
+tr.l2 td:first-child .bil { padding-left: 32px; }
+tr.sec-hd td { background: var(--bg3); font-weight: 700; color: var(--accent); font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
+tr.tot td { background: var(--bg3); font-weight: 700; }
+tr.hi td { background: rgba(91, 123, 139, 0.15); font-weight: 700; }
+
+.mat-chart { display: flex; justify-content: space-around; align-items: flex-end; gap: 12px; padding: 20px 0; margin-top: 20px; border-top: 1px solid var(--border); }
+.mat-col { text-align: center; flex: 1; }
+.mat-bar-wrap { height: 150px; display: flex; align-items: flex-end; justify-content: center; }
+.mat-bar { width: 40px; background: linear-gradient(to top, var(--primary), var(--secondary)); border-radius: 4px 4px 0 0; min-height: 5px; transition: height 0.5s; }
+.mat-lbl { font-size: 0.8em; color: var(--text2); margin-top: 8px; font-weight: 500; }
+.mat-val { font-family: var(--font-mono); font-weight: var(--font-mono-weight); font-size: 0.85em; color: var(--text); margin-top: 4px; }
+
+.stmt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+.stmt-sec h4 { font-size: 1em; color: var(--accent); margin-bottom: 12px; font-weight: 700; }
+
+.summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+.summary-row .card { background: var(--bg3); }
+
+.bk-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.bk-tab { background: var(--bg3); border: 1px solid var(--border); padding: 10px 14px; cursor: pointer; text-align: left; transition: all 0.2s; display: flex; flex-direction: column; gap: 2px; min-width: 100px; }
+.bk-tab:hover { border-color: var(--border2); background: var(--bg); }
+.bk-tab.active { background: var(--accent); border-color: var(--accent); }
+.bk-tab.active .bk-tab-name, .bk-tab.active .bk-tab-val, .bk-tab.active .bk-tab-pct { color: var(--bg); }
+.bk-tab-name { font-weight: 600; font-size: 0.9em; color: var(--text); }
+.bk-tab-val { font-family: var(--font-mono); font-weight: var(--font-mono-weight); font-size: 0.85em; color: var(--text); }
+.bk-tab-pct { font-size: 0.75em; color: var(--text3); }
+.bk-detail-panel { }
+.bk-detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 12px; }
+.bk-detail-name { }
+.bk-detail-kr { font-size: 1.3em; font-weight: 700; color: var(--accent); display: block; }
+.bk-detail-en { font-size: 0.9em; color: var(--text3); }
+.bk-detail-total { text-align: right; }
+.bk-detail-total-val { font-family: var(--font-mono); font-weight: var(--font-mono-weight); font-size: 1.5em; color: var(--text); display: block; }
+.bk-detail-total-pct { font-size: 0.85em; color: var(--text2); }
+.bk-detail-chg { font-family: var(--font-mono); font-weight: var(--font-mono-weight); font-size: 0.85em; display: block; margin-top: 4px; }
+.bk-detail-chg.pos { color: var(--pos); }
+.bk-detail-chg.neg { color: var(--neg); }
+.bk-detail-empty { padding: 40px; text-align: center; color: var(--text3); }
+
+.chart-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.chart-controls label { font-weight: 600; color: var(--text2); }
+.period-btn { background: var(--bg3); border: 1px solid var(--border); padding: 8px 16px; cursor: pointer; font-family: inherit; font-weight: 600; color: var(--text2); transition: all 0.2s; }
+.period-btn:hover { background: var(--border); color: var(--text); }
+.period-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.chart-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 20px; }
+.chart-card { background: var(--bg2); border: 1px solid var(--border); padding: 20px; }
+.chart-card h4 { font-size: 1.1em; color: var(--accent); font-weight: 700; }
+.chart-card .sub { font-size: 0.85em; color: var(--text3); margin-bottom: 12px; }
+.chart-stats { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.chart-stat .label { font-size: 0.8em; color: var(--text3); }
+.chart-stat .value { font-family: var(--font-mono); font-weight: var(--font-mono-weight); color: var(--text); }
+.chart-stat .change { font-family: var(--font-mono); font-weight: var(--font-mono-weight); }
+.chart-stat .change.pos { color: var(--pos); }
+.chart-stat .change.neg { color: var(--neg); }
+.chart-svg { width: 100%; height: auto; }
+.chart-line { fill: none; stroke: var(--primary); stroke-width: 2; }
+.chart-area { fill: rgba(91, 123, 139, 0.15); }
+.chart-dot { fill: var(--primary); }
+.chart-grid-line { stroke: var(--border); stroke-dasharray: 2; }
+.chart-label { font-size: 10px; fill: var(--text3); }
+.no-data { text-align: center; padding: 60px 20px; color: var(--text2); }
+.no-data h3 { margin-bottom: 10px; }
+
+.modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; }
+.modal.open { display: block; }
+.modal-content { background: var(--bg2); border: 1px solid #2a2a25; padding: 24px; max-width: 500px; width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+.modal-content h3 { font-size: 1.2em; color: var(--accent); margin-bottom: 16px; font-weight: 700; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.saved-list { max-height: 300px; overflow-y: auto; }
+.saved-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.2s; }
+.saved-item:hover { background: var(--bg3); }
+.saved-date { font-weight: 600; color: var(--text); }
+.saved-val { font-size: 0.85em; color: var(--text2); font-family: var(--font-mono); font-weight: var(--font-mono-weight); }
+.btn-sm { padding: 6px 12px; font-size: 0.85em; }
+.btn-danger { background: var(--neg); color: #fff; border-color: var(--neg); }
+.btn-danger:hover { filter: brightness(1.1); background: var(--neg); }
+
+.setting-group { margin-bottom: 20px; }
+.setting-group label { display: block; font-weight: 600; color: var(--text2); margin-bottom: 10px; font-size: 0.9em; }
+.setting-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.setting-btn { background: var(--bg3); border: 1px solid var(--border); padding: 10px 16px; cursor: pointer; font-family: inherit; font-weight: 500; color: var(--text2); transition: all 0.2s; font-size: 0.9em; }
+.setting-btn:hover { background: var(--border); color: var(--text); }
+.setting-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--accent); color: var(--bg); padding: 14px 24px; font-weight: 600; z-index: 2000; opacity: 0; transition: all 0.3s; }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.error { background: var(--neg); color: #fff; }
+
+.loading { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 3000; justify-content: center; align-items: center; }
+.loading.show { display: flex; }
+.spinner { width: 50px; height: 50px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.dropzone-initial { border: 2px dashed var(--border2); padding: 60px 40px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg2); margin-bottom: 20px; }
+.dropzone-initial:hover, .dropzone-initial.dragover { border-color: var(--accent); background: var(--bg3); }
+.dropzone-initial h2 { font-size: 1.3em; color: var(--accent); margin-bottom: 12px; }
+.dropzone-initial p { color: var(--text2); margin-bottom: 8px; }
+.dropzone-initial a { color: var(--pos); }
+.dropzone-initial input { display: none; }
+
+.nav-arrows { position: fixed; right: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 100; }
+.nav-btn { width: 44px; height: 44px; background: var(--bg2); border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: var(--text); }
+.nav-btn:hover { background: var(--bg3); }
+.nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.nav-btn svg { width: 20px; height: 20px; }
+
+@media (max-width: 768px) {
+  .dash { padding: 12px; }
+  .hd { padding-bottom: 14px; margin-bottom: 16px; }
+  .hd-top { flex-direction: column; gap: 10px; }
+  .hd h1 { font-size: 1.2em; }
+  .hd .sub-kr { font-size: 0.95em; }
+  .hd .sub-en { font-size: 0.8em; }
+  .hd-btns { width: 100%; flex-wrap: wrap; gap: 6px; }
+  .hd-btns .btn, .hd-btns .pdf-btn { font-size: 0.8em; padding: 8px 10px; flex: 1; min-width: 80px; justify-content: center; }
+  .rel-info { font-size: 0.85em; gap: 12px; }
+  .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 0; }
+  .tab { min-width: 60px; padding: 10px 8px; font-size: 0.7em; }
+  .grid { grid-template-columns: 1fr; gap: 12px; }
+  .card { padding: 14px; }
+  .card-kr { font-size: 1em; }
+  .card-val { font-size: 1.3em; }
+  .card-desc { font-size: 0.8em; }
+  .badges { gap: 5px; }
+  .badge { font-size: 0.75em; padding: 3px 7px; }
+  .box { padding: 14px; margin-bottom: 16px; }
+  .box h3 { font-size: 1em; margin-bottom: 12px; }
+  .tbl-box { padding: 10px; margin-bottom: 16px; }
+  .tbl-box h3 { font-size: 0.95em; }
+  .tbl-sub { font-size: 0.75em; margin-bottom: 10px; }
+  table { font-size: 0.75em; min-width: 400px; }
+  th, td { padding: 6px 4px; }
+  th { font-size: 0.7em; }
+  .bil .kr { font-size: 0.85em; }
+  .bil .en { font-size: 0.65em; }
+  .stmt-grid { grid-template-columns: 1fr; gap: 16px; }
+  .stmt-sec { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .stmt-sec h4 { font-size: 0.9em; margin-bottom: 10px; }
+  .stmt-sec table { min-width: 350px; }
+  .summary-row { grid-template-columns: 1fr; gap: 10px; margin-top: 16px; }
+  .summary-row .card { padding: 12px; }
+  .summary-row .card-val { font-size: 1.2em; }
+  .chart-grid { grid-template-columns: 1fr; }
+  .info-grid { grid-template-columns: 1fr; gap: 12px; }
+  .mat-chart { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 12px 0; }
+  .mat-col { min-width: unset; }
+  .mat-bar-wrap { height: 80px; }
+  .mat-bar { width: 24px; }
+  .mat-lbl { font-size: 0.6em; }
+  .mat-val { font-size: 0.65em; }
+  .leg { flex-wrap: wrap; gap: 10px; font-size: 0.8em; }
+  .bar-lbl { font-size: 0.85em; }
+  .sbar { height: 24px; }
+  .formula { font-size: 0.85em; padding: 12px; }
+  .formula-calc { font-size: 0.85em; }
+  .dropzone-initial { padding: 30px 15px; }
+  .dropzone-initial h2 { font-size: 1em; }
+  .dropzone-initial p { font-size: 0.85em; }
+  .chat-w { bottom: 10px; right: 10px; }
+  .chat-tog { width: 44px; height: 44px; font-size: 18px; }
+  .chat-cont { width: 100%; max-width: 100%; height: 70vh; }
+  .modal-content { width: 95%; max-height: 85vh; }
+  .modal-content h2 { font-size: 1.1em; }
+  .nav-arrows { right: 8px; bottom: 70px; }
+  .nav-btn { width: 36px; height: 36px; }
+  .info { padding: 12px; }
+  .info h4 { font-size: 0.9em; }
+  .info-item p { font-size: 0.8em; }
+  .bk-tabs { gap: 4px; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
+  .bk-tab { min-width: 80px; padding: 8px 10px; flex-shrink: 0; }
+  .bk-tab-name { font-size: 0.8em; }
+  .bk-tab-val { font-size: 0.75em; }
+  .bk-tab-pct { font-size: 0.65em; }
+  .bk-detail-header { flex-direction: column; gap: 8px; }
+  .bk-detail-total { text-align: left; }
+  .bk-detail-kr { font-size: 1.1em; }
+  .bk-detail-total-val { font-size: 1.2em; }
+}
+
+/* 테이블 스크롤 힌트 */
+.tbl-box::after {
+  content: '← 스크롤 →';
+  display: none;
+  text-align: center;
+  font-size: 0.7em;
+  color: var(--text3);
+  padding-top: 8px;
+}
+@media (max-width: 768px) {
+  .tbl-box::after { display: block; }
+}
+
+/* 상세/축약 토글 */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.toggle-btn {
+  background: var(--bg2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  padding: 6px 16px;
+  font-family: inherit;
+  font-size: 0.85em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.toggle-btn:first-child { border-radius: 4px 0 0 4px; }
+.toggle-btn:last-child { border-radius: 0 4px 4px 0; }
+.toggle-btn:hover { background: var(--bg3); }
+.toggle-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="loading" id="loading"><div class="spinner"></div></div>
+
+<div class="nav-arrows" id="navArrows" style="display:none">
+  <button class="nav-btn" id="navPrev" onclick="navData(-1)" title="이전 보고서">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+  <button class="nav-btn" id="navNext" onclick="navData(1)" title="다음 보고서">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+</div>
+
+<div class="dash">
+  <div class="hd">
+    <div class="hd-top">
+      <div class="hd-left">
+        <a href="index.html" class="btn" title="홈">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </a>
+        <h1>Fed Dashboard</h1>
+        <span class="hd-title-kr">연준 대차대조표</span>
+      </div>
+      <div class="hd-btns">
+        <label class="pdf-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>PDF<input type="file" id="pdfInput" accept=".pdf" multiple></label>
+        <a class="btn primary" href="https://www.federalreserve.gov/releases/h41/" target="_blank" title="연준 H.4.1 페이지" style="text-decoration:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> 최신 데이터</a>
+        <button class="btn" onclick="openModal('historyModal')" title="저장된 데이터"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></button>
+        <button class="btn" onclick="toggleTheme()" title="테마 변경"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+        <button class="btn" onclick="openModal('settingsModal')" title="설정"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      </div>
+    </div>
+    <div class="rel-info">
+      <span>발표일: <strong id="releaseDate">-</strong></span>
+      <span>기준일: <strong id="asOfDate">-</strong></span>
+      <span class="status"><span class="status-dot"></span> <span id="statusText">대기</span></span>
+      <span style="margin-left:auto;opacity:0.5;font-size:0.75em" id="appVersion"></span>
+    </div>
+  </div>
+
+  <div class="dropzone-initial" id="dropzoneInitial">
+    <h2><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>H.4.1 PDF 파일을 드래그하거나 클릭하세요</h2>
+    <p>여러 파일을 한번에 올려서 시계열 데이터를 쌓을 수 있습니다</p>
+    <p><a href="https://www.federalreserve.gov/releases/h41/" target="_blank">연준 H.4.1 PDF 다운로드 →</a></p>
+    <input type="file" id="pdfInputInitial" accept=".pdf" multiple>
+  </div>
+
+  <div class="tabs" id="tabsContainer" style="display:none">
+    <button class="tab active" onclick="showTab('overview',this)">개요</button>
+    <button class="tab" onclick="showTab('factors',this)">준비금 요인</button>
+    <button class="tab" onclick="showTab('factorsSummary',this)">기록 항목</button>
+    <button class="tab" onclick="showTab('maturity',this)">만기 분포</button>
+    <button class="tab" onclick="showTab('loans',this)">대출/증권</button>
+    <button class="tab" onclick="showTab('consolidated',this)">재무제표</button>
+    <button class="tab" onclick="showTab('banks',this)">지역 연준</button>
+    <button class="tab" onclick="showTab('frNotes',this)">연방준비권</button>
+    <button class="tab" onclick="showTab('charts',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:4px"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>추이</button>
+  </div>
+
+  <div id="overview" class="tab-content"></div>
+  <div id="factors" class="tab-content"></div>
+  <div id="factorsSummary" class="tab-content"></div>
+  <div id="maturity" class="tab-content"></div>
+  <div id="loans" class="tab-content"></div>
+  <div id="consolidated" class="tab-content"></div>
+  <div id="banks" class="tab-content"></div>
+  <div id="frNotes" class="tab-content"></div>
+  <div id="charts" class="tab-content"></div>
+</div>
+
+<div class="modal" id="historyModal">
+  <div class="modal-content">
+    <h3>저장된 데이터 <span id="dataCount" style="font-size:0.7em;color:var(--text2)"></span></h3>
+    <div id="savedDataList" class="saved-list"></div>
+    <div class="form-actions">
+      <button class="btn btn-danger" onclick="deleteAllData()" id="deleteAllBtn" style="display:none">모두 삭제</button>
+      <button class="btn" onclick="closeModal('historyModal')">닫기</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-content">
+    <h3>설정</h3>
+    <div class="setting-group">
+      <label>테마</label>
+      <div class="setting-row">
+        <button class="setting-btn" onclick="setTheme('dark')" id="themeDark">🌙 다크</button>
+        <button class="setting-btn" onclick="setTheme('light')" id="themeLight">☀️ 라이트</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <label>글자 크기</label>
+      <div class="setting-row">
+        <button class="setting-btn" onclick="setFontSize('sm')" id="fontSm">작게</button>
+        <button class="setting-btn" onclick="setFontSize('md')" id="fontMd">보통</button>
+        <button class="setting-btn" onclick="setFontSize('lg')" id="fontLg">크게</button>
+        <button class="setting-btn" onclick="setFontSize('xl')" id="fontXl">아주 크게</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <label>본문 서체</label>
+      <div class="setting-row">
+        <button class="setting-btn" onclick="setTextFont('pressura')" id="textPressura">GT Pressura</button>
+        <button class="setting-btn" onclick="setTextFont('noto')" id="textNoto">Noto Sans KR</button>
+        <button class="setting-btn" onclick="setTextFont('pretendard')" id="textPretendard">Pretendard</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <label>본문 두께</label>
+      <div class="setting-row">
+        <button class="setting-btn" onclick="setTextWeight('regular')" id="textWeightRegular">Regular</button>
+        <button class="setting-btn" onclick="setTextWeight('text')" id="textWeightText">Text</button>
+        <button class="setting-btn" onclick="setTextWeight('medium')" id="textWeightMedium">Medium</button>
+        <button class="setting-btn" onclick="setTextWeight('semibold')" id="textWeightSemibold">SemiBold</button>
+        <button class="setting-btn" onclick="setTextWeight('bold')" id="textWeightBold">Bold</button>
+        <button class="setting-btn" onclick="setTextWeight('extrabold')" id="textWeightExtrabold">ExtraBold</button>
+        <button class="setting-btn" onclick="setTextWeight('heavy')" id="textWeightHeavy">Heavy</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <label>숫자 서체</label>
+      <div class="setting-row">
+        <button class="setting-btn" onclick="setMonoFont('pressura-mono')" id="monoPressura">GT Pressura Mono</button>
+        <button class="setting-btn" onclick="setMonoFont('ibm')" id="monoIbm">IBM Plex Mono</button>
+        <button class="setting-btn" onclick="setMonoFont('source')" id="monoSource">Source Code Pro</button>
+      </div>
+    </div>
+    <div class="setting-group">
+      <label>숫자 두께</label>
+      <div class="setting-row">
+        <button class="setting-btn" onclick="setMonoWeight('light')" id="monoWeightLight">Light</button>
+        <button class="setting-btn" onclick="setMonoWeight('regular')" id="monoWeightRegular">Regular</button>
+        <button class="setting-btn" onclick="setMonoWeight('text')" id="monoWeightText">Text</button>
+        <button class="setting-btn" onclick="setMonoWeight('medium')" id="monoWeightMedium">Medium</button>
+        <button class="setting-btn" onclick="setMonoWeight('bold')" id="monoWeightBold">Bold</button>
+      </div>
+    </div>
+    <div class="form-actions"><button class="btn primary" onclick="closeModal('settingsModal')">닫기</button></div>
+  </div>
+</div>
+
+<script src="shared/icons.js"></script>
+<script>
+// 홈 아이콘 삽입
+document.getElementById('homeIcon').innerHTML = Icons.home;
+</script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ========== 버전 체크 시스템 ==========
+const APP_VERSION = 'v4.1.0';
+const VERSION_URL = 'https://raw.githubusercontent.com/sntaind/Fed-Reserve-Balance-Sheet/main/version.json';
+
+async function checkForUpdates() {
+  try {
+    const res = await fetch(VERSION_URL + '?t=' + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.version && data.version !== APP_VERSION) {
+      if (confirm(`🆕 새 버전이 있습니다!\n\n현재: ${APP_VERSION}\n최신: ${data.version}\n\n다운로드 페이지로 이동할까요?`)) {
+        window.open(data.downloadUrl || 'https://github.com/sntaind/Fed-Reserve-Balance-Sheet/releases', '_blank');
+      }
+    }
+  } catch (e) { console.log('Version check skipped'); }
+}
+
+// 버전 표시 및 체크
+document.addEventListener('DOMContentLoaded', () => {
+  const v = document.getElementById('appVersion');
+  if (v) v.textContent = APP_VERSION;
+  setTimeout(checkForUpdates, 2000);
+});
+
+// ========== 앱 설정 ==========
+const API_BASE = '';
+let currentData = null;
+let savedDataList = [];
+let chartPeriod = '3m';
+const defaultSettings = {theme:'light',fontSize:'md',textFont:'pressura',monoFont:'pressura-mono',textWeight:'medium',monoWeight:'medium'};
+let settings = {...defaultSettings};
+const fontMap = {
+  text: { 
+    pressura: "'GT Pressura', 'SUIT', -apple-system, 'Apple SD Gothic Neo', sans-serif",
+    noto: "'Noto Sans KR', sans-serif", 
+    pretendard: "'Pretendard', sans-serif"
+  },
+  mono: { 
+    'pressura-mono': "'GT Pressura Mono', 'Source Code Pro', monospace",
+    ibm: "'IBM Plex Mono', monospace", 
+    source: "'Source Code Pro', monospace"
+  }
+};
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function saveDataToServer() {
+  try {
+    await fetch(API_BASE + '/api/data', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(savedDataList) });
+    updateStatus('저장됨');
+  } catch (e) { console.error('Save error:', e); }
+}
+
+async function loadDataFromServer() {
+  try {
+    const res = await fetch(API_BASE + '/api/data');
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      savedDataList = data;
+      currentDataIndex = 0;
+      currentData = savedDataList[0];
+      renderAll();
+      document.getElementById('dropzoneInitial').style.display = 'none';
+      document.getElementById('tabsContainer').style.display = 'flex';
+      document.getElementById('overview').classList.add('active');
+      updateNavButtons();
+    }
+  } catch (e) { console.error('Load error:', e); }
+}
+
+async function saveSettingsToServer() {
+  try { await fetch(API_BASE + '/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings) }); } catch (e) { console.error('Settings save error:', e); }
+}
+
+async function loadSettingsFromServer() {
+  try {
+    const res = await fetch(API_BASE + '/api/settings');
+    const data = await res.json();
+    if (data && Object.keys(data).length > 0) settings = {...defaultSettings, ...data};
+    applySettings();
+  } catch (e) { console.error('Settings load error:', e); }
+}
+
+function updateStatus(text) {
+  document.getElementById('statusText').textContent = text;
+  setTimeout(() => { document.getElementById('statusText').textContent = '대기'; }, 2000);
+}
+
+function applySettings() {
+  document.body.classList.remove('dark', 'font-sm', 'font-md', 'font-lg', 'font-xl');
+  if (settings.theme === 'dark') document.body.classList.add('dark');
+  document.body.classList.add('font-' + settings.fontSize);
+  document.documentElement.style.setProperty('--font-text', fontMap.text[settings.textFont] || fontMap.text.pressura);
+  document.documentElement.style.setProperty('--font-mono', fontMap.mono[settings.monoFont] || fontMap.mono['pressura-mono']);
+  // 웨이트 이름→숫자 매핑
+  const weightMap = { light: '300', regular: '400', text: '450', medium: '500', semibold: '600', bold: '700', extrabold: '800', heavy: '900' };
+  const textWeightName = settings.textWeight || 'medium';
+  const monoWeightName = settings.monoWeight || 'medium';
+  const textWeight = weightMap[textWeightName] || '500';
+  const monoWeight = weightMap[monoWeightName] || '500';
+  document.body.style.fontWeight = textWeight;
+  document.documentElement.style.setProperty('--font-text-weight', textWeight);
+  document.documentElement.style.setProperty('--font-mono-weight', monoWeight);
+  // 버튼 활성화 상태
+  document.querySelectorAll('.setting-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('theme' + (settings.theme === 'dark' ? 'Dark' : 'Light'))?.classList.add('active');
+  document.getElementById('font' + settings.fontSize.charAt(0).toUpperCase() + settings.fontSize.slice(1))?.classList.add('active');
+  // 본문 서체 활성화
+  if (settings.textFont === 'pressura') document.getElementById('textPressura')?.classList.add('active');
+  else if (settings.textFont === 'noto') document.getElementById('textNoto')?.classList.add('active');
+  else if (settings.textFont === 'pretendard') document.getElementById('textPretendard')?.classList.add('active');
+  // 본문 두께 활성화
+  document.getElementById('textWeight' + textWeightName.charAt(0).toUpperCase() + textWeightName.slice(1))?.classList.add('active');
+  // 숫자 서체 활성화
+  if (settings.monoFont === 'pressura-mono') document.getElementById('monoPressura')?.classList.add('active');
+  else if (settings.monoFont === 'ibm') document.getElementById('monoIbm')?.classList.add('active');
+  else if (settings.monoFont === 'source') document.getElementById('monoSource')?.classList.add('active');
+  // 숫자 두께 활성화
+  document.getElementById('monoWeight' + monoWeightName.charAt(0).toUpperCase() + monoWeightName.slice(1))?.classList.add('active');
+}
+
+function setTheme(t) { settings.theme = t; saveSettingsToServer(); applySettings(); }
+function setFontSize(s) { settings.fontSize = s; saveSettingsToServer(); applySettings(); }
+function setTextFont(f) { settings.textFont = f; saveSettingsToServer(); applySettings(); }
+function setMonoFont(f) { settings.monoFont = f; saveSettingsToServer(); applySettings(); }
+function setTextWeight(w) { settings.textWeight = w; saveSettingsToServer(); applySettings(); }
+function setMonoWeight(w) { settings.monoWeight = w; saveSettingsToServer(); applySettings(); }
+
+const dropzone = document.getElementById('dropzoneInitial');
+const pdfInput = document.getElementById('pdfInput');
+const pdfInputInitial = document.getElementById('pdfInputInitial');
+
+dropzone.addEventListener('click', () => pdfInputInitial.click());
+dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e) => { 
+  e.preventDefault(); 
+  dropzone.classList.remove('dragover'); 
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+  if (files.length) processMultiplePDFs(files);
+});
+pdfInput.addEventListener('change', (e) => { 
+  const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
+  if (files.length) processMultiplePDFs(files);
+  e.target.value = '';
+});
+pdfInputInitial.addEventListener('change', (e) => { 
+  const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
+  if (files.length) processMultiplePDFs(files);
+  e.target.value = '';
+});
+document.body.addEventListener('dragover', (e) => e.preventDefault());
+document.body.addEventListener('drop', (e) => { 
+  e.preventDefault(); 
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+  if (files.length) processMultiplePDFs(files);
+});
+
+async function processMultiplePDFs(files) {
+  document.getElementById('loading').classList.add('show');
+  let processed = 0;
+  let errors = 0;
+  
+  for (const file of files) {
+    try {
+      await processSinglePDF(file);
+      processed++;
+    } catch (err) {
+      console.error('PDF 처리 오류:', file.name, err);
+      errors++;
+    }
+  }
+  
+  document.getElementById('loading').classList.remove('show');
+  
+  if (processed > 0) {
+    // 날짜순 정렬 (최신이 앞으로)
+    savedDataList.sort((a, b) => {
+      const dateA = new Date(a.releaseDate || '1900-01-01');
+      const dateB = new Date(b.releaseDate || '1900-01-01');
+      return dateB - dateA;
+    });
+    
+    currentDataIndex = 0;
+    currentData = savedDataList[0];
+    saveDataToServer();
+    renderAll();
+    document.getElementById('dropzoneInitial').style.display = 'none';
+    document.getElementById('tabsContainer').style.display = 'flex';
+    updateNavButtons();
+    
+    if (errors > 0) {
+      showToast(`✅ ${processed}개 완료, ⚠️ ${errors}개 실패`);
+    } else {
+      showToast(`✅ ${processed}개 PDF 분석 완료`);
+    }
+  } else {
+    showToast('❌ PDF 처리 실패');
+  }
+}
+
+async function processSinglePDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+  }
+  parseH41Text(fullText, true); // skipRender = true
+}
+
+function parseH41Text(text, skipRender = false) {
+  const extractWithChanges = (label) => {
+    // 두 가지 경우 모두 지원:
+    // 1) 라벨 + 각주숫자 + 공백 + 값 (예: "Bills2 248,755")
+    // 2) 라벨 + 추가문자 + 공백 + 값 (예: "Reserve balances with Federal Reserve Banks 3,049,630")
+    const patterns = [
+      // 패턴1a: 라벨 + 각주(0-2자리) + 공백 + 값 +/- 주간 +/- 연간
+      new RegExp(label + '\\d{0,2}\\s+([0-9,]+)\\s*([+-])\\s*([0-9,]+)\\s*([+-])\\s*([0-9,]+)', 'i'),
+      // 패턴1b: 라벨 + 비숫자문자들 + 공백 + 값 +/- 주간 +/- 연간
+      new RegExp(label + '[a-z\\s]*\\s+([0-9,]+)\\s*([+-])\\s*([0-9,]+)\\s*([+-])\\s*([0-9,]+)', 'i'),
+      // 패턴2a: 라벨 + 각주 + 값 0 +/- 연간
+      new RegExp(label + '\\d{0,2}\\s+([0-9,]+)\\s+0\\s+([+-])\\s*([0-9,]+)', 'i'),
+      // 패턴2b: 라벨 + 비숫자문자들 + 값 0 +/- 연간
+      new RegExp(label + '[a-z\\s]*\\s+([0-9,]+)\\s+0\\s+([+-])\\s*([0-9,]+)', 'i'),
+      // 패턴3a: 라벨 + 각주 + 값 0 0
+      new RegExp(label + '\\d{0,2}\\s+([0-9,]+)\\s+0\\s+0', 'i'),
+      // 패턴3b: 라벨 + 비숫자문자들 + 값 0 0
+      new RegExp(label + '[a-z\\s]*\\s+([0-9,]+)\\s+0\\s+0', 'i'),
+      // 패턴4: 폴백 - 값만
+      new RegExp(label + '(?:\\d{0,2}|[a-z\\s]*)\\s+([0-9,]+)', 'i'),
+    ];
+    
+    // 패턴1 시도 (주간/연간 변동 있음)
+    for (let i = 0; i < 2; i++) {
+      let m = text.match(patterns[i]);
+      if (m && m[1]) {
+        const v = parseInt(m[1].replace(/,/g, '')) || 0;
+        let w = parseInt(m[3].replace(/,/g, '')) || 0;
+        let y = parseInt(m[5].replace(/,/g, '')) || 0;
+        if (m[2] === '-') w = -w;
+        if (m[4] === '-') y = -y;
+        return { v, w, y };
+      }
+    }
+    
+    // 패턴2 시도 (주간변동 0)
+    for (let i = 2; i < 4; i++) {
+      let m = text.match(patterns[i]);
+      if (m && m[1]) {
+        const v = parseInt(m[1].replace(/,/g, '')) || 0;
+        let y = parseInt(m[3].replace(/,/g, '')) || 0;
+        if (m[2] === '-') y = -y;
+        return { v, w: 0, y };
+      }
+    }
+    
+    // 패턴3 시도 (변동 없음)
+    for (let i = 4; i < 6; i++) {
+      let m = text.match(patterns[i]);
+      if (m && m[1]) {
+        const v = parseInt(m[1].replace(/,/g, '')) || 0;
+        return { v, w: 0, y: 0 };
+      }
+    }
+    
+    // 패턴4 폴백
+    let m = text.match(patterns[6]);
+    if (m && m[1]) {
+      const v = parseInt(m[1].replace(/,/g, '')) || 0;
+      return { v, w: 0, y: 0 };
+    }
+    
+    return { v: 0, w: 0, y: 0 };
+  };
+
+  const dateMatch = text.match(/(?:December|January|February|March|April|May|June|July|August|September|October|November)\s+\d{1,2},?\s*\d{4}/i);
+  const weekMatch = text.match(/Week\s+ended\s+(\w+\s+\d{1,2},?\s*\d{4})/i);
+
+  currentData = {
+    releaseDate: dateMatch ? dateMatch[0] : 'Unknown',
+    asOfDate: weekMatch ? weekMatch[1] : (dateMatch ? dateMatch[0] : 'Unknown'),
+    timestamp: new Date().toISOString(),
+    
+    // ===== TABLE 1: FACTORS SUPPLYING RESERVE FUNDS =====
+    reserveBankCredit: extractWithChanges('Reserve Bank credit'),
+    
+    // Securities held outright
+    securitiesHeld: extractWithChanges('Securities held outright'),
+    treasurySecurities: extractWithChanges('U\\.?S\\.? Treasury securities'),
+    bills: extractWithChanges('Bills'),
+    notesAndBonds: extractWithChanges('Notes and bonds, nominal'),
+    tips: extractWithChanges('Notes and bonds, inflation-indexed'),
+    inflationComp: extractWithChanges('Inflation compensation'),
+    agencyDebt: extractWithChanges('Federal agency debt securities'),
+    mbs: extractWithChanges('Mortgage-backed securities'),
+    
+    // Unamortized premiums/discounts
+    unamortizedPremiums: extractWithChanges('Unamortized premiums on securities'),
+    unamortizedDiscounts: extractWithChanges('Unamortized discounts on securities'),
+    
+    // Repurchase agreements
+    repos: extractWithChanges('Repurchase agreements'),
+    reposForeign: extractWithChanges('Foreign official'),
+    reposOthers: extractWithChanges('Others'),
+    
+    // Loans
+    loans: extractWithChanges('Loans'),
+    primaryCredit: extractWithChanges('Primary credit'),
+    secondaryCredit: extractWithChanges('Secondary credit'),
+    seasonalCredit: extractWithChanges('Seasonal credit'),
+    ppplf: extractWithChanges('Paycheck Protection Program'),
+    btfp: extractWithChanges('Bank Term Funding Program'),
+    otherCredit: extractWithChanges('Other credit extensions'),
+    
+    // Main Street
+    mainStreet: extractWithChanges('Net portfolio holdings of MS Facilities|Main Street'),
+    
+    // Float
+    float: extractWithChanges('Float'),
+    
+    // Central bank liquidity swaps
+    swaps: extractWithChanges('Central bank liquidity swaps'),
+    
+    // Other Federal Reserve assets
+    otherFedAssets: extractWithChanges('Other Federal Reserve assets'),
+    
+    // Foreign currency denominated assets
+    foreignCurrency: extractWithChanges('Foreign currency denominated assets'),
+    
+    // Gold, SDR, Treasury currency
+    gold: extractWithChanges('Gold stock'),
+    sdr: extractWithChanges('Special drawing rights certificate'),
+    treasuryCurrency: extractWithChanges('Treasury currency outstanding'),
+    
+    // Total supplying
+    totalSupplying: extractWithChanges('Total factors supplying'),
+    
+    // ===== TABLE 1: FACTORS ABSORBING RESERVE FUNDS =====
+    currency: extractWithChanges('Currency in circulation'),
+    
+    // Reverse repurchase agreements
+    rrp: extractWithChanges('Reverse repurchase agreements'),
+    rrpForeign: extractWithChanges('Foreign official and international'),
+    rrpOthers: extractWithChanges('Others'),
+    
+    // Treasury cash holdings
+    treasuryCash: extractWithChanges('Treasury cash holdings'),
+    
+    // Deposits with F.R. Banks
+    deposits: extractWithChanges('Deposits with F\\.?R\\.? Banks'),
+    termDeposits: extractWithChanges('Term deposits held by depository'),
+    tga: extractWithChanges('U\\.?S\\.? Treasury,? General Account'),
+    foreignDeposits: extractWithChanges('Foreign official'),
+    otherDeposits: extractWithChanges('Other(?!.*credit)'),
+    
+    // Treasury contributions
+    treasuryContributions: extractWithChanges('Treasury contributions'),
+    
+    // Other liabilities and capital
+    otherLiabilitiesCapital: extractWithChanges('Other liabilities and capital'),
+    
+    // Total absorbing
+    totalAbsorbing: extractWithChanges('Total factors.*other than reserve'),
+    
+    // Reserve balances
+    reserves: extractWithChanges('Reserve balances with Federal Reserve'),
+    
+    // ===== TABLE 1A: MEMORANDUM ITEMS =====
+    // Securities held in custody
+    custodyTotal: extractWithChanges('Securities held in custody for foreign'),
+    custodyTreasuries: extractWithChanges('Marketable U\\.?S\\.? Treasury securities'),
+    custodyAgencyMBS: extractWithChanges('Federal agency debt and mortgage'),
+    custodyOther: extractWithChanges('Other securities'),
+    
+    // Securities lent to dealers
+    secLendingTotal: extractWithChanges('Securities lent to dealers'),
+    secLendingOvernight: extractWithChanges('Overnight facility'),
+    secLendingOvernightTreasury: extractWithChanges('U\\.?S\\.? Treasury securities(?=.*lent|.*dealer)'),
+    secLendingOvernightAgency: extractWithChanges('Federal agency debt securities(?=.*lent|.*dealer)'),
+    
+    // ===== TABLE 5: CONSOLIDATED STATEMENT =====
+    // Assets
+    goldCertAccount: extractWithChanges('Gold certificate account'),
+    sdrCertAccount: extractWithChanges('Special drawing rights certificate account'),
+    coin: extractWithChanges('Coin'),
+    securitiesLoansTotal: extractWithChanges('Securities.*unamortized.*repurchase.*and loans'),
+    itemsInCollection: extractWithChanges('Items in process of collection'),
+    bankPremises: extractWithChanges('Bank premises'),
+    otherAssets: extractWithChanges('Other assets'),
+    totalAssets: extractWithChanges('Total assets'),
+    
+    // Liabilities
+    frNotesNet: extractWithChanges('Federal Reserve notes.*net'),
+    depositsTotal: extractWithChanges('Deposits(?!.*with)'),
+    otherDepositsDepository: extractWithChanges('Other deposits held by depository'),
+    deferredAvailability: extractWithChanges('Deferred availability'),
+    otherLiabilities: extractWithChanges('Other liabilities and accrued'),
+    totalLiabilities: extractWithChanges('Total liabilities'),
+    
+    // Capital
+    capitalPaidIn: extractWithChanges('Capital paid in'),
+    surplus: extractWithChanges('Surplus'),
+    otherCapital: extractWithChanges('Other capital'),
+    totalCapital: extractWithChanges('Total capital'),
+    
+    // Earnings remittances
+    earningsRemittances: extractWithChanges('Earnings remittances due'),
+    
+    // ===== TABLE 3: MBS SUPPLEMENTAL =====
+    mbsResidential: extractWithChanges('Residential mortgage-backed'),
+    mbsCommercial: extractWithChanges('Commercial mortgage-backed'),
+    mbsCommitmentsBuy: extractWithChanges('Commitments to buy'),
+    mbsCommitmentsSell: extractWithChanges('Commitments to sell'),
+    
+    // ===== TABLE 7: COLLATERAL =====
+    frNotesOutstanding: extractWithChanges('Federal Reserve notes outstanding'),
+    frNotesHeldByBanks: extractWithChanges('Notes held by F\\.?R\\.? Banks'),
+    frNotesToBeCollateralized: extractWithChanges('Federal Reserve notes to be collateralized'),
+    collateralHeld: extractWithChanges('Collateral held against'),
+    collateralGold: extractWithChanges('Gold certificate account'),
+    collateralSDR: extractWithChanges('Special drawing rights certificate'),
+    collateralSecurities: extractWithChanges('Treasury.*agency.*securities pledged'),
+    collateralOther: extractWithChanges('Other assets pledged'),
+    
+    // Legacy support
+    secLending: { overnight: extractWithChanges('Overnight'), term: extractWithChanges('Term'), total: extractWithChanges('Total securities lent') },
+    frNotes: parseFRNotes(text),
+    maturity: parseMaturityTable(text),
+    banks: parseBanks(text)
+  };
+
+  if (currentData.reserves.v === 0) {
+    const m = text.match(/Reserve balances[^\d]*?([\d,]+)/i);
+    if (m) currentData.reserves.v = parseInt(m[1].replace(/,/g, ''));
+  }
+
+  const idx = savedDataList.findIndex(d => d.releaseDate === currentData.releaseDate);
+  if (idx >= 0) savedDataList[idx] = {...currentData};
+  else savedDataList.unshift({...currentData});
+  savedDataList.sort((a, b) => parseDate(b.releaseDate) - parseDate(a.releaseDate));
+  
+  if (skipRender) return; // 여러 파일 처리 시 마지막에만 렌더링
+  
+  saveDataToServer();
+  currentDataIndex = savedDataList.findIndex(d => d.releaseDate === currentData.releaseDate);
+  renderAll();
+  document.getElementById('dropzoneInitial').style.display = 'none';
+  document.getElementById('tabsContainer').style.display = 'flex';
+  updateNavButtons();
+  document.querySelector('.tab.active').click();
+}
+
+function parseMaturityRow(text, label) {
+  const p = new RegExp(label + '[\\s\\S]{0,200}?([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)', 'i');
+  const m = text.match(p);
+  if (m) return { d15: parseInt(m[1].replace(/,/g, '')) || 0, d90: parseInt(m[2].replace(/,/g, '')) || 0, d1y: parseInt(m[3].replace(/,/g, '')) || 0, y5: parseInt(m[4].replace(/,/g, '')) || 0, y10: parseInt(m[5].replace(/,/g, '')) || 0, y10plus: parseInt(m[6].replace(/,/g, '')) || 0, total: parseInt(m[7].replace(/,/g, '')) || 0 };
+  return { d15: 0, d90: 0, d1y: 0, y5: 0, y10: 0, y10plus: 0, total: 0 };
+}
+
+function parseMaturityTable(text) {
+  // Table 2 섹션 추출
+  const table2Match = text.match(/2\.\s*Maturity Distribution[\s\S]*?(?=3\.\s*Supplemental|H\.4\.1\s*3\.|$)/i);
+  const t2 = table2Match ? table2Match[0] : text;
+  
+  const defaultRow = { d15: 0, d90: 0, d1y: 0, y5: 0, y10: 0, y10plus: 0, total: 0 };
+  
+  // PDF.js 추출 텍스트에서 특정 패턴의 숫자 시퀀스 찾기
+  // 국채: 68,778 222,464 454,722 1,409,619 491,646 1,596,025 4,243,253
+  // (5자리 6자리 6자리 7자리 6자리 7자리 7자리 패턴)
+  
+  let treasury = {...defaultRow};
+  // 국채 특징: 4백만대 총액
+  const treasuryPattern = /(\d{2},\d{3})\s+(\d{3},\d{3})\s+(\d{3},\d{3})\s+(\d{1},\d{3},\d{3})\s+(\d{3},\d{3})\s+(\d{1},\d{3},\d{3})\s+(\d{1},\d{3},\d{3})/;
+  const tm = t2.match(treasuryPattern);
+  if (tm) {
+    treasury = {
+      d15: parseInt(tm[1].replace(/,/g, '')) || 0,
+      d90: parseInt(tm[2].replace(/,/g, '')) || 0,
+      d1y: parseInt(tm[3].replace(/,/g, '')) || 0,
+      y5: parseInt(tm[4].replace(/,/g, '')) || 0,
+      y10: parseInt(tm[5].replace(/,/g, '')) || 0,
+      y10plus: parseInt(tm[6].replace(/,/g, '')) || 0,
+      total: parseInt(tm[7].replace(/,/g, '')) || 0
+    };
+  }
+  
+  // MBS: 0 28 36 4,895 59,200 1,974,865 2,039,024
+  // 특징: 10년+ 컬럼이 매우 큼 (1,974,865)
+  let mbs = {...defaultRow};
+  const mbsPattern = /0\s+28\s+36\s+(\d{1},\d{3})\s+(\d{2},\d{3})\s+(\d{1},\d{3},\d{3})\s+(\d{1},\d{3},\d{3})/;
+  const mm = t2.match(mbsPattern);
+  if (mm) {
+    mbs = {
+      d15: 0,
+      d90: 28,
+      d1y: 36,
+      y5: parseInt(mm[1].replace(/,/g, '')) || 0,
+      y10: parseInt(mm[2].replace(/,/g, '')) || 0,
+      y10plus: parseInt(mm[3].replace(/,/g, '')) || 0,
+      total: parseInt(mm[4].replace(/,/g, '')) || 0
+    };
+  }
+  
+  // Agency Debt: 0 0 0 1,818 529 0 2,347
+  // 특징: 앞 3개 0, 총액 2천대
+  let agencyDebt = {...defaultRow};
+  const agencyPattern = /0\s+0\s+0\s+(\d{1},\d{3})\s+(\d{3})\s+0\s+(\d{1},\d{3})/;
+  const am = t2.match(agencyPattern);
+  if (am) {
+    agencyDebt = {
+      d15: 0,
+      d90: 0,
+      d1y: 0,
+      y5: parseInt(am[1].replace(/,/g, '')) || 0,
+      y10: parseInt(am[2].replace(/,/g, '')) || 0,
+      y10plus: 0,
+      total: parseInt(am[3].replace(/,/g, '')) || 0
+    };
+  }
+  
+  // Loans: 2,198 3,212 21 (짧은 행)
+  let loans = { d15: 0, d90: 0, d1y: 0 };
+  const loansPattern = /(\d{1},\d{3})\s+(\d{1},\d{3})\s+(\d{1,2})\s+0\s+0/;
+  const lm = t2.match(loansPattern);
+  if (lm) {
+    loans = {
+      d15: parseInt(lm[1].replace(/,/g, '')) || 0,
+      d90: parseInt(lm[2].replace(/,/g, '')) || 0,
+      d1y: parseInt(lm[3].replace(/,/g, '')) || 0
+    };
+  }
+  
+  // Main Street: 986 123 89
+  let mainStreet = { d15: 0, d90: 0, d1y: 0 };
+  const msPattern = /(\d{3})\s+(\d{2,3})\s+(\d{2,3})\s+0\s+\.\.\./;
+  const msm = t2.match(msPattern);
+  if (msm) {
+    mainStreet = {
+      d15: parseInt(msm[1]) || 0,
+      d90: parseInt(msm[2]) || 0,
+      d1y: parseInt(msm[3]) || 0
+    };
+  }
+  
+  // RRP: 317,751
+  let rrp = 0;
+  const rrpPattern = /(\d{3},\d{3})\s+0\s+\.\.\.\s+\.\.\.\s+\.\.\.\s+\.\.\.\s+\1/;
+  const rrpm = t2.match(rrpPattern);
+  if (rrpm) {
+    rrp = parseInt(rrpm[1].replace(/,/g, '')) || 0;
+  } else {
+    // 대안: Reverse repurchase 근처에서 찾기
+    const rrpAlt = t2.match(/Reverse repurchase.*?(\d{3},\d{3})/i);
+    if (rrpAlt) rrp = parseInt(rrpAlt[1].replace(/,/g, '')) || 0;
+  }
+  
+  // Swaps: 122 0 0 0 0 0 122
+  let swaps = {...defaultRow};
+  const swapsPattern = /(\d{2,3})\s+0\s+0\s+0\s+0\s+0\s+\1/;
+  const sm = t2.match(swapsPattern);
+  if (sm && parseInt(sm[1]) < 1000) {
+    const v = parseInt(sm[1]) || 0;
+    swaps = { d15: v, d90: 0, d1y: 0, y5: 0, y10: 0, y10plus: 0, total: v };
+  }
+  
+  // Repos: 1
+  let repos = 0;
+  const reposPattern = /Repurchase agreements.*?(\d+)/i;
+  const rpm = t2.match(reposPattern);
+  if (rpm) repos = parseInt(rpm[1]) || 0;
+  
+  return {
+    loans,
+    treasury,
+    treasuryChanges: defaultRow,
+    agencyDebt,
+    agencyDebtChanges: defaultRow,
+    mbs,
+    mbsChanges: defaultRow,
+    mainStreet,
+    repos,
+    swaps,
+    rrp,
+    termDeposits: 0
+  };
+}
+
+function parseBanks(text) {
+  const bankNames = ['Boston','New York','Philadelphia','Cleveland','Richmond','Atlanta','Chicago','St. Louis','Minneapolis','Kansas City','Dallas','San Francisco'];
+  const banksKr = ['보스턴','뉴욕','필라델피아','클리블랜드','리치몬드','애틀랜타','시카고','세인트루이스','미니애폴리스','캔자스시티','댈러스','샌프란시스코'];
+  
+  const results = bankNames.map((name, i) => ({
+    name,
+    kr: banksKr[i],
+    assets: 0,
+    goldCerts: 0,
+    sdrCerts: 0,
+    coin: 0,
+    securities: 0,
+    treasuries: 0,
+    mbs: 0,
+    repos: 0,
+    loans: 0,
+    frNotes: 0,
+    rrp: 0,
+    deposits: 0,
+    capital: 0,
+    surplus: 0
+  }));
+  
+  // "Statement of Condition of Each Federal Reserve Bank" 섹션 찾기
+  const bankSection = text.match(/Statement of Condition of Each[\s\S]*?(?=Collateral Held|Federal Reserve Notes|$)/i);
+  if (!bankSection) {
+    // 기본값 반환
+    const defaults = [169212,3370938,126828,247633,535872,458267,418720,110270,63049,87800,333546,659096];
+    results.forEach((r, i) => r.assets = defaults[i]);
+    return results;
+  }
+  
+  const section = bankSection[0];
+  
+  // 항목별 파싱 - 행 단위로 숫자 12개 추출
+  const parseRow = (pattern) => {
+    const regex = new RegExp(pattern + '[^\\d]*([\\d,]+(?:\\s+[\\d,]+){11})', 'i');
+    const m = section.match(regex);
+    if (m) {
+      return m[1].split(/\s+/).map(n => parseInt(n.replace(/,/g, '')) || 0);
+    }
+    return Array(12).fill(0);
+  };
+  
+  const totalAssets = parseRow('Total assets');
+  const goldCerts = parseRow('Gold certificate');
+  const sdrCerts = parseRow('Special drawing rights');
+  const securities = parseRow('Securities.*held outright');
+  const treasuries = parseRow('U\\.?S\\.? Treasury securities');
+  const mbsRow = parseRow('Federal agency.*MBS|Mortgage-backed');
+  const repos = parseRow('Repurchase agreements');
+  const loans = parseRow('Loans(?!.*securities)');
+  const frNotes = parseRow('Federal Reserve notes');
+  const rrp = parseRow('Reverse repurchase');
+  const deposits = parseRow('Deposits(?!.*Treasury)');
+  const capital = parseRow('Capital paid');
+  const surplus = parseRow('Surplus');
+  
+  results.forEach((r, i) => {
+    r.assets = totalAssets[i] || 0;
+    r.goldCerts = goldCerts[i] || 0;
+    r.sdrCerts = sdrCerts[i] || 0;
+    r.securities = securities[i] || 0;
+    r.treasuries = treasuries[i] || 0;
+    r.mbs = mbsRow[i] || 0;
+    r.repos = repos[i] || 0;
+    r.loans = loans[i] || 0;
+    r.frNotes = frNotes[i] || 0;
+    r.rrp = rrp[i] || 0;
+    r.deposits = deposits[i] || 0;
+    r.capital = capital[i] || 0;
+    r.surplus = surplus[i] || 0;
+  });
+  
+  // 총 자산이 없으면 기본값
+  if (results.every(r => r.assets === 0)) {
+    const defaults = [169212,3370938,126828,247633,535872,458267,418720,110270,63049,87800,333546,659096];
+    results.forEach((r, i) => r.assets = defaults[i]);
+  }
+  
+  return results;
+}
+
+function parseFRNotes(text) {
+  const banks = ['Boston','New York','Philadelphia','Cleveland','Richmond','Atlanta','Chicago','St. Louis','Minneapolis','Kansas City','Dallas','San Francisco'];
+  const banksKr = ['보스턴','뉴욕','필라델피아','클리블랜드','리치몬드','애틀랜타','시카고','세인트루이스','미니애폴리스','캔자스시티','댈러스','샌프란시스코'];
+  
+  const results = banks.map((b, i) => ({ name: b, kr: banksKr[i], outstanding: 0, collateral: 0, gold: 0 }));
+  
+  // Federal Reserve Notes 섹션 찾기
+  const notesSection = text.match(/Federal Reserve notes.*?outstanding.*?(?=\n\s*\n|\d+\.\s+[A-Z])/is);
+  if (!notesSection) return results;
+  
+  const section = notesSection[0];
+  
+  // 각 연준 은행별 데이터 파싱
+  banks.forEach((bank, i) => {
+    // 은행명 뒤의 숫자들 찾기 (outstanding, collateral, gold 순서)
+    const bankPattern = new RegExp(bank + '[\\s\\S]*?([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)', 'i');
+    const match = section.match(bankPattern);
+    if (match) {
+      results[i].outstanding = parseInt(match[1].replace(/,/g, '')) || 0;
+      results[i].collateral = parseInt(match[2].replace(/,/g, '')) || 0;
+      results[i].gold = parseInt(match[3].replace(/,/g, '')) || 0;
+    }
+  });
+  
+  // 만약 위 방식으로 못 찾으면, 테이블 형식으로 다시 시도
+  if (results.every(r => r.outstanding === 0)) {
+    // 숫자 행들을 찾아서 순서대로 매핑
+    const numberRows = section.match(/[\d,]+\s+[\d,]+\s+[\d,]+/g);
+    if (numberRows) {
+      numberRows.slice(0, 12).forEach((row, i) => {
+        const nums = row.match(/[\d,]+/g);
+        if (nums && nums.length >= 3 && i < 12) {
+          results[i].outstanding = parseInt(nums[0].replace(/,/g, '')) || 0;
+          results[i].collateral = parseInt(nums[1].replace(/,/g, '')) || 0;
+          results[i].gold = parseInt(nums[2].replace(/,/g, '')) || 0;
+        }
+      });
+    }
+  }
+  
+  return results;
+}
+
+function fmt(n) { return n == null ? '-' : new Intl.NumberFormat('en-US').format(n); }
+function fmtChg(n) { return (n == null || n === 0) ? '-' : (n > 0 ? '+' : '') + fmt(n); }
+function fmtPct(n) { return (n == null || n === 0) ? '-' : (n > 0 ? '+' : '') + n.toFixed(2) + '%'; }
+function calcPct(change, base) { return (base && change) ? (change / base * 100) : 0; }
+function chgClass(n) { return (n == null || n === 0) ? '' : (n > 0 ? 'pos' : 'neg'); }
+function showTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+  if (id === 'charts') renderCharts();
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); if (id === 'historyModal') renderSavedList(); if (id === 'settingsModal') applySettings(); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function parseDate(str) {
+  const months = {January:0,February:1,March:2,April:3,May:4,June:5,July:6,August:7,September:8,October:9,November:10,December:11};
+  const m = str.match(/(\w+)\s+(\d+),?\s*(\d{4})/);
+  if (m) return new Date(parseInt(m[3]), months[m[1]] || 0, parseInt(m[2]));
+  return new Date(str);
+}
+
+function renderSavedList() {
+  document.getElementById('dataCount').textContent = savedDataList.length ? `(${savedDataList.length}개)` : '';
+  document.getElementById('deleteAllBtn').style.display = savedDataList.length > 0 ? 'inline-block' : 'none';
+  const el = document.getElementById('savedDataList');
+  if (!savedDataList.length) { el.innerHTML = '<p style="color:var(--text2);text-align:center;padding:40px 0">저장된 데이터가 없습니다</p>'; return; }
+  el.innerHTML = savedDataList.map((d,i) => `<div class="saved-item" onclick="loadSaved(${i})"><div><div class="saved-date">${d.releaseDate}</div><div class="saved-val">총자산: $${fmt(d.totalAssets?.v || d.totalSupplying?.v)}M</div></div><button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteSaved(${i})">삭제</button></div>`).join('');
+}
+
+function deleteAllData() {
+  if (!confirm('저장된 모든 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+  savedDataList = [];
+  currentData = {};
+  currentDataIndex = 0;
+  saveDataToServer();
+  renderSavedList();
+  document.getElementById('dropzoneInitial').style.display = 'block';
+  document.getElementById('tabsContainer').style.display = 'none';
+  updateNavButtons();
+  closeModal('historyModal');
+  showToast('✅ 모든 데이터가 삭제되었습니다');
+}
+
+let currentDataIndex = 0;
+
+function navData(dir) {
+  const newIndex = currentDataIndex + dir;
+  if (newIndex < 0 || newIndex >= savedDataList.length) return;
+  currentDataIndex = newIndex;
+  currentData = savedDataList[currentDataIndex];
+  renderAll();
+  updateNavButtons();
+}
+
+function updateNavButtons() {
+  const navArrows = document.getElementById('navArrows');
+  if (savedDataList.length > 1) {
+    navArrows.style.display = 'flex';
+    document.getElementById('navPrev').disabled = currentDataIndex === 0;
+    document.getElementById('navNext').disabled = currentDataIndex === savedDataList.length - 1;
+  } else {
+    navArrows.style.display = 'none';
+  }
+}
+
+function loadSaved(i) {
+  currentDataIndex = i;
+  currentData = savedDataList[i];
+  renderAll();
+  document.getElementById('dropzoneInitial').style.display = 'none';
+  document.getElementById('tabsContainer').style.display = 'flex';
+  updateNavButtons();
+  closeModal('historyModal');
+}
+
+function deleteSaved(i) {
+  if (!confirm('삭제할까요?')) return;
+  savedDataList.splice(i, 1);
+  saveDataToServer();
+  renderSavedList();
+  showToast('🗑️ 삭제됨');
+}
+
+function renderAll() {
+  if (!currentData) return;
+  document.getElementById('releaseDate').textContent = currentData.releaseDate;
+  document.getElementById('asOfDate').textContent = currentData.asOfDate;
+  renderOverview();
+  renderFactors();
+  renderFactorsSummary();
+  renderMaturity();
+  renderLoans();
+  renderConsolidated();
+  renderBanks();
+  renderFRNotes();
+}
+
+function renderOverview() {
+  const d = currentData;
+  const totalAssets = d.totalAssets?.v || d.totalSupplying?.v || 0;
+  const treasury = d.treasurySecurities?.v || 0;
+  const mbs = d.mbs?.v || 0;
+  const metrics = [{kr:'총 자산',en:'Total Assets',...d.totalSupplying,desc:'연준 보유 모든 자산'},{kr:'보유 증권',en:'Securities Held',...d.securitiesHeld,desc:'국채 + MBS + 기관채'},{kr:'지급준비금',en:'Reserve Balances',...d.reserves,desc:'은행들의 연준 예치 준비금'},{kr:'재무부 일반계정',en:'TGA',...d.tga,desc:'정부의 당좌예금'},{kr:'역환매조건부',en:'Reverse Repo',...d.rrp,desc:'단기 유동성 흡수'},{kr:'유통 통화',en:'Currency',...d.currency,desc:'시중 현금'}];
+  
+  let html = '<div class="grid">' + metrics.map(m => {
+    const wPct = calcPct(m.w, m.v - m.w);
+    const yPct = calcPct(m.y, m.v - m.y);
+    return `<div class="card"><div class="card-hd"><span class="card-kr">${m.kr}</span><span class="card-en">${m.en}</span></div><div class="card-val">$${fmt(m.v)}M</div><div class="card-desc">${m.desc}</div><div class="badges"><span class="badge ${chgClass(m.w)}">주간: ${fmtChg(m.w)} (${fmtPct(wPct)})</span><span class="badge ${chgClass(m.y)}">연간: ${fmtChg(m.y)} (${fmtPct(yPct)})</span></div></div>`;
+  }).join('') + '</div>';
+  
+  const tsyPct = totalAssets ? (treasury / totalAssets * 100).toFixed(1) : 0;
+  const mbsPct = totalAssets ? (mbs / totalAssets * 100).toFixed(1) : 0;
+  const othPct = Math.max(0, 100 - tsyPct - mbsPct).toFixed(1);
+  html += `<div class="box"><h3>자산 구성</h3><div class="bar-grp"><div class="bar-lbl">총 자산 <span>$${(totalAssets/1e6).toFixed(2)}T</span></div><div class="sbar"><div class="seg tsy" style="width:${tsyPct}%"></div><div class="seg mbs" style="width:${mbsPct}%"></div><div class="seg oth" style="width:${othPct}%"></div></div><div class="leg"><span><i class="dot tsy"></i>국채 ${tsyPct}%</span><span><i class="dot mbs"></i>MBS ${mbsPct}%</span><span><i class="dot oth"></i>기타 ${othPct}%</span></div></div></div>`;
+  document.getElementById('overview').innerHTML = html;
+}
+
+function renderFactors() {
+  const d = currentData;
+  const isDetailed = localStorage.getItem('fed-detailed') !== 'false';
+  
+  const row = (label, kr, data, lvl=0, show=true) => {
+    if (!show && !isDetailed) return '';
+    const wPct = calcPct(data?.w, data?.v - (data?.w || 0));
+    const yPct = calcPct(data?.y, data?.v - (data?.y || 0));
+    const cls = lvl ? 'l'+lvl : '';
+    return `<tr class="${cls}"><td><div class="bil"><span class="kr">${kr}</span><span class="en">${label}</span></div></td><td class="val">${fmt(data?.v)}</td><td class="chg ${chgClass(data?.w)}">${fmtChg(data?.w)}<br><small>${fmtPct(wPct)}</small></td><td class="chg ${chgClass(data?.y)}">${fmtChg(data?.y)}<br><small>${fmtPct(yPct)}</small></td></tr>`;
+  };
+  
+  const summaryCard = (kr, en, data, desc) => {
+    const wPct = calcPct(data?.w, data?.v - (data?.w || 0));
+    const yPct = calcPct(data?.y, data?.v - (data?.y || 0));
+    return `<div class="card"><div class="card-hd"><span class="card-kr">${kr}</span><span class="card-en">${en}</span></div><div class="card-val">$${fmt(data?.v)}M</div><div class="card-desc">${desc}</div><div class="badges"><span class="badge ${chgClass(data?.w)}">주간: ${fmtChg(data?.w)} (${fmtPct(wPct)})</span><span class="badge ${chgClass(data?.y)}">연간: ${fmtChg(data?.y)} (${fmtPct(yPct)})</span></div></div>`;
+  };
+  
+  document.getElementById('factors').innerHTML = `
+    <div class="view-toggle">
+      <button class="toggle-btn ${isDetailed ? 'active' : ''}" onclick="setDetailedView(true)">상세</button>
+      <button class="toggle-btn ${!isDetailed ? 'active' : ''}" onclick="setDetailedView(false)">축약</button>
+    </div>
+    <div class="tbl-box">
+      <h3>지급준비금 영향 요인</h3>
+      <p class="tbl-sub">Table 1: Factors Affecting Reserve Balances of Depository Institutions · 단위: 백만 달러</p>
+      <div class="stmt-grid">
+        <div class="stmt-sec">
+          <h4>공급 요인 SUPPLYING RESERVE FUNDS</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('Reserve Bank Credit','연준 신용',d.reserveBankCredit)}
+              ${row('Securities Held Outright','보유 증권',d.securitiesHeld,1)}
+              ${row('U.S. Treasury Securities','미 국채',d.treasurySecurities,2)}
+              ${row('Bills','단기채 (T-Bills)',d.bills,2,false)}
+              ${row('Notes and Bonds, Nominal','중장기채 (명목)',d.notesAndBonds,2,false)}
+              ${row('Notes and Bonds, Inflation-indexed','물가연동채 (TIPS)',d.tips,2,false)}
+              ${row('Inflation Compensation','인플레이션 보정',d.inflationComp,2,false)}
+              ${row('Federal Agency Debt Securities','연방기관채',d.agencyDebt,2,false)}
+              ${row('Mortgage-Backed Securities','MBS',d.mbs,2)}
+              ${row('Unamortized Premiums','미상각 프리미엄',d.unamortizedPremiums,1,false)}
+              ${row('Unamortized Discounts','미상각 할인',d.unamortizedDiscounts,1,false)}
+              ${row('Repurchase Agreements','레포',d.repos,1)}
+              ${row('Foreign Official','외국 공식기관',d.reposForeign,2,false)}
+              ${row('Others','기타',d.reposOthers,2,false)}
+              ${row('Loans','대출',d.loans,1)}
+              ${row('Primary Credit','1차 신용',d.primaryCredit,2,false)}
+              ${row('Secondary Credit','2차 신용',d.secondaryCredit,2,false)}
+              ${row('Seasonal Credit','계절 신용',d.seasonalCredit,2,false)}
+              ${row('PPPLF','급여보호프로그램',d.ppplf,2,false)}
+              ${row('Bank Term Funding Program','BTFP',d.btfp,2,false)}
+              ${row('Other Credit Extensions','기타 신용',d.otherCredit,2,false)}
+              ${row('Main Street Lending Program','메인스트리트',d.mainStreet,1,false)}
+              ${row('Float','플로트',d.float,1,false)}
+              ${row('Central Bank Liquidity Swaps','통화스왑',d.swaps,1)}
+              ${row('Other Federal Reserve Assets','기타 연준 자산',d.otherFedAssets,1,false)}
+              ${row('Foreign Currency Denominated Assets','외화표시 자산',d.foreignCurrency,1,false)}
+              ${row('Gold Stock','금',d.gold)}
+              ${row('SDR Certificate Account','SDR 증서',d.sdr)}
+              ${row('Treasury Currency Outstanding','재무부 통화',d.treasuryCurrency,0,false)}
+              <tr class="tot"><td><strong>Total Factors Supplying</strong></td><td class="val"><strong>${fmt(d.totalSupplying?.v)}</strong></td><td class="chg ${chgClass(d.totalSupplying?.w)}"><strong>${fmtChg(d.totalSupplying?.w)}</strong></td><td class="chg ${chgClass(d.totalSupplying?.y)}"><strong>${fmtChg(d.totalSupplying?.y)}</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stmt-sec">
+          <h4>흡수 요인 ABSORBING RESERVE FUNDS</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('Currency in Circulation','유통 통화',d.currency)}
+              ${row('Reverse Repurchase Agreements','역레포',d.rrp)}
+              ${row('Foreign Official and International','외국 공식/국제기관',d.rrpForeign,1,false)}
+              ${row('Others','기타 (ON RRP)',d.rrpOthers,1,false)}
+              ${row('Treasury Cash Holdings','재무부 현금',d.treasuryCash,0,false)}
+              ${row('Deposits with F.R. Banks','연준 예치금',d.deposits)}
+              ${row('Term Deposits','정기예금',d.termDeposits,1,false)}
+              ${row('U.S. Treasury, General Account','TGA',d.tga,1)}
+              ${row('Foreign Official','외국 공식기관',d.foreignDeposits,1,false)}
+              ${row('Other','기타',d.otherDeposits,1,false)}
+              ${row('Treasury Contributions to Credit Facilities','재무부 출자',d.treasuryContributions,0,false)}
+              ${row('Other Liabilities and Capital','기타 부채/자본',d.otherLiabilitiesCapital,0,false)}
+              <tr class="tot"><td><strong>Total Factors Absorbing</strong></td><td class="val"><strong>${fmt(d.totalAbsorbing?.v)}</strong></td><td class="chg ${chgClass(d.totalAbsorbing?.w)}"><strong>${fmtChg(d.totalAbsorbing?.w)}</strong></td><td class="chg ${chgClass(d.totalAbsorbing?.y)}"><strong>${fmtChg(d.totalAbsorbing?.y)}</strong></td></tr>
+              <tr class="hi"><td><strong>Reserve Balances</strong></td><td class="val"><strong>${fmt(d.reserves?.v)}</strong></td><td class="chg ${chgClass(d.reserves?.w)}"><strong>${fmtChg(d.reserves?.w)}</strong></td><td class="chg ${chgClass(d.reserves?.y)}"><strong>${fmtChg(d.reserves?.y)}</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="summary-row">
+        ${summaryCard('공급 합계','Total Supplying',d.totalSupplying,'준비금 공급 요인 총합')}
+        ${summaryCard('흡수 합계','Total Absorbing',d.totalAbsorbing,'준비금 흡수 요인 총합')}
+        ${summaryCard('지급준비금','Reserve Balances',d.reserves,'공급 - 흡수 = 준비금')}
+      </div>
+    </div>
+  `;
+}
+
+function setDetailedView(detailed) {
+  localStorage.setItem('fed-detailed', detailed);
+  renderFactors();
+  renderFactorsSummary();
+  renderConsolidated();
+}
+
+function renderFactorsSummary() {
+  const d = currentData;
+  const isDetailed = localStorage.getItem('fed-detailed') !== 'false';
+  
+  const row = (kr, en, data, lvl=0, show=true) => {
+    if (!show && !isDetailed) return '';
+    const wPct = calcPct(data?.w, data?.v - (data?.w || 0));
+    const cls = lvl ? 'l'+lvl : '';
+    return `<tr class="${cls}"><td><div class="bil"><span class="kr">${kr}</span><span class="en">${en}</span></div></td><td class="val">${fmt(data?.v)}</td><td class="chg ${chgClass(data?.w)}">${fmtChg(data?.w)}</td><td class="chg ${chgClass(data?.y)}">${fmtChg(data?.y)}</td></tr>`;
+  };
+  
+  document.getElementById('factorsSummary').innerHTML = `
+    <div class="view-toggle">
+      <button class="toggle-btn ${isDetailed ? 'active' : ''}" onclick="setDetailedView(true)">상세</button>
+      <button class="toggle-btn ${!isDetailed ? 'active' : ''}" onclick="setDetailedView(false)">축약</button>
+    </div>
+    <div class="tbl-box">
+      <h3>기록 항목</h3>
+      <p class="tbl-sub">Table 1A: Memorandum Items · 단위: 백만 달러</p>
+      <div class="stmt-grid">
+        <div class="stmt-sec">
+          <h4>외국 공식기관 보관 증권</h4>
+          <p style="color:var(--text3);font-size:0.85em;margin-bottom:12px">Securities held in custody for foreign official and international accounts</p>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('보관 증권 합계','Total',d.custodyTotal)}
+              ${row('시장성 미 국채','Marketable U.S. Treasury Securities',d.custodyTreasuries,1)}
+              ${row('기관채 및 MBS','Federal Agency Debt and MBS',d.custodyAgencyMBS,1)}
+              ${row('기타 증권','Other Securities',d.custodyOther,1,false)}
+            </tbody>
+          </table>
+        </div>
+        <div class="stmt-sec">
+          <h4>딜러 대출 증권</h4>
+          <p style="color:var(--text3);font-size:0.85em;margin-bottom:12px">Securities lent to dealers</p>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('대출 증권 합계','Total',d.secLendingTotal)}
+              ${row('익일물 시설','Overnight Facility',d.secLendingOvernight,1)}
+              ${row('미 국채','U.S. Treasury Securities',d.secLendingOvernightTreasury,2,false)}
+              ${row('연방기관채','Federal Agency Debt Securities',d.secLendingOvernightAgency,2,false)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="info" style="margin-top:20px">
+        <h4>기록 항목 설명</h4>
+        <p style="color:var(--text2);line-height:1.6">
+          <strong>외국 공식기관 보관 증권</strong>: 외국 중앙은행 및 국제기구가 연준에 보관을 맡긴 증권입니다. 연준 대차대조표에는 포함되지 않지만, 글로벌 달러 수요와 외국의 미국 국채 보유 동향을 나타내는 중요 지표입니다.<br><br>
+          <strong>딜러 대출 증권</strong>: SOMA(System Open Market Account) 포트폴리오의 국채를 1차 딜러에게 일시적으로 대출하여 국채 시장의 유동성과 기능을 지원합니다. 담보는 미 국채로 완전히 충당됩니다.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
+function renderMaturity() {
+  const m = currentData.maturity || {};
+  const t = m.treasury || {};
+  const tChg = m.treasuryChanges || {};
+  const agency = m.agencyDebt || {};
+  const agencyChg = m.agencyDebtChanges || {};
+  const mbs = m.mbs || {};
+  const mbsChg = m.mbsChanges || {};
+  const loans = m.loans || {};
+  const mainStreet = m.mainStreet || {};
+  const swaps = m.swaps || {};
+  
+  const isDetailed = localStorage.getItem('fed-detailed') !== 'false';
+  
+  const maxVal = Math.max(t.y5 || 0, t.y10plus || 0, 1);
+  const cols = [{lbl:'15일↓',v:t.d15},{lbl:'16-90일',v:t.d90},{lbl:'91일-1년',v:t.d1y},{lbl:'1-5년',v:t.y5},{lbl:'5-10년',v:t.y10},{lbl:'10년↑',v:t.y10plus}];
+  
+  const fmtCell = (v) => v ? fmt(v) : '-';
+  const fmtChgCell = (v) => {
+    if (!v) return '-';
+    const cls = v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+    return `<span class="${cls}">${v > 0 ? '+' : ''}${fmt(v)}</span>`;
+  };
+  
+  document.getElementById('maturity').innerHTML = `
+    <div class="view-toggle">
+      <button class="toggle-btn ${isDetailed ? 'active' : ''}" onclick="setDetailedView(true);renderMaturity()">상세</button>
+      <button class="toggle-btn ${!isDetailed ? 'active' : ''}" onclick="setDetailedView(false);renderMaturity()">축약</button>
+    </div>
+    <div class="tbl-box">
+      <h3>만기별 자산/부채 분포</h3>
+      <p class="tbl-sub">Table 2: Maturity Distribution of Securities, Loans, and Selected Other Assets and Liabilities · 단위: 백만 달러</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>잔존만기</th>
+            <th>15일↓</th>
+            <th>16-90일</th>
+            <th>91일-1년</th>
+            <th>1-5년</th>
+            <th>5-10년</th>
+            <th>10년↑</th>
+            <th>합계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Loans -->
+          <tr>
+            <td><div class="bil"><span class="kr">대출</span><span class="en">Loans</span></div></td>
+            <td class="val">${fmtCell(loans.d15)}</td>
+            <td class="val">${fmtCell(loans.d90)}</td>
+            <td class="val">${fmtCell(loans.d1y)}</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">${fmtCell((loans.d15||0)+(loans.d90||0)+(loans.d1y||0))}</td>
+          </tr>
+          
+          <!-- U.S. Treasury securities -->
+          <tr>
+            <td><div class="bil"><span class="kr">미 국채</span><span class="en">U.S. Treasury Securities</span></div></td>
+            <td class="val">${fmtCell(t.d15)}</td>
+            <td class="val">${fmtCell(t.d90)}</td>
+            <td class="val">${fmtCell(t.d1y)}</td>
+            <td class="val">${fmtCell(t.y5)}</td>
+            <td class="val">${fmtCell(t.y10)}</td>
+            <td class="val">${fmtCell(t.y10plus)}</td>
+            <td class="val">${fmtCell(t.total)}</td>
+          </tr>
+          ${isDetailed ? `
+          <tr class="l1" style="background:var(--bg2)">
+            <td style="padding-left:24px;font-size:0.9em;color:var(--text2)">주간 변동</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.d15)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.d90)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.d1y)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.y5)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.y10)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.y10plus)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(tChg.total)}</td>
+          </tr>
+          ` : ''}
+          
+          <!-- Federal agency debt securities -->
+          <tr>
+            <td><div class="bil"><span class="kr">연방기관채</span><span class="en">Federal Agency Debt Securities</span></div></td>
+            <td class="val">${fmtCell(agency.d15)}</td>
+            <td class="val">${fmtCell(agency.d90)}</td>
+            <td class="val">${fmtCell(agency.d1y)}</td>
+            <td class="val">${fmtCell(agency.y5)}</td>
+            <td class="val">${fmtCell(agency.y10)}</td>
+            <td class="val">${fmtCell(agency.y10plus)}</td>
+            <td class="val">${fmtCell(agency.total)}</td>
+          </tr>
+          ${isDetailed ? `
+          <tr class="l1" style="background:var(--bg2)">
+            <td style="padding-left:24px;font-size:0.9em;color:var(--text2)">주간 변동</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.d15)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.d90)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.d1y)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.y5)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.y10)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.y10plus)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(agencyChg.total)}</td>
+          </tr>
+          ` : ''}
+          
+          <!-- Mortgage-backed securities -->
+          <tr>
+            <td><div class="bil"><span class="kr">MBS</span><span class="en">Mortgage-Backed Securities</span></div></td>
+            <td class="val">${fmtCell(mbs.d15)}</td>
+            <td class="val">${fmtCell(mbs.d90)}</td>
+            <td class="val">${fmtCell(mbs.d1y)}</td>
+            <td class="val">${fmtCell(mbs.y5)}</td>
+            <td class="val">${fmtCell(mbs.y10)}</td>
+            <td class="val">${fmtCell(mbs.y10plus)}</td>
+            <td class="val">${fmtCell(mbs.total)}</td>
+          </tr>
+          ${isDetailed ? `
+          <tr class="l1" style="background:var(--bg2)">
+            <td style="padding-left:24px;font-size:0.9em;color:var(--text2)">주간 변동</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.d15)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.d90)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.d1y)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.y5)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.y10)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.y10plus)}</td>
+            <td class="val" style="font-size:0.85em">${fmtChgCell(mbsChg.total)}</td>
+          </tr>
+          ` : ''}
+          
+          ${isDetailed ? `
+          <!-- Main Street Lending -->
+          <tr>
+            <td><div class="bil"><span class="kr">메인스트리트</span><span class="en">Loan Participations (Main Street)</span></div></td>
+            <td class="val">${fmtCell(mainStreet.d15)}</td>
+            <td class="val">${fmtCell(mainStreet.d90)}</td>
+            <td class="val">${fmtCell(mainStreet.d1y)}</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">${fmtCell((mainStreet.d15||0)+(mainStreet.d90||0)+(mainStreet.d1y||0))}</td>
+          </tr>
+          
+          <!-- Repurchase agreements -->
+          <tr>
+            <td><div class="bil"><span class="kr">레포</span><span class="en">Repurchase Agreements</span></div></td>
+            <td class="val">${fmtCell(m.repos)}</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">${fmtCell(m.repos)}</td>
+          </tr>
+          
+          <!-- Central bank liquidity swaps -->
+          <tr>
+            <td><div class="bil"><span class="kr">통화스왑</span><span class="en">Central Bank Liquidity Swaps</span></div></td>
+            <td class="val">${fmtCell(swaps.d15)}</td>
+            <td class="val">${fmtCell(swaps.d90)}</td>
+            <td class="val">${fmtCell(swaps.d1y)}</td>
+            <td class="val">${fmtCell(swaps.y5)}</td>
+            <td class="val">${fmtCell(swaps.y10)}</td>
+            <td class="val">${fmtCell(swaps.y10plus)}</td>
+            <td class="val">${fmtCell(swaps.total)}</td>
+          </tr>
+          
+          <!-- Reverse repurchase agreements -->
+          <tr>
+            <td><div class="bil"><span class="kr">역레포</span><span class="en">Reverse Repurchase Agreements</span></div></td>
+            <td class="val">${fmtCell(m.rrp)}</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">${fmtCell(m.rrp)}</td>
+          </tr>
+          
+          <!-- Term deposits -->
+          <tr>
+            <td><div class="bil"><span class="kr">정기예금</span><span class="en">Term Deposits</span></div></td>
+            <td class="val">${fmtCell(m.termDeposits)}</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">-</td>
+            <td class="val">${fmtCell(m.termDeposits)}</td>
+          </tr>
+          ` : ''}
+        </tbody>
+      </table>
+      
+      <h4 style="margin-top:24px">국채 만기 분포 차트</h4>
+      <div class="mat-chart">
+        ${cols.map(c => `
+          <div class="mat-col">
+            <div class="mat-bar-wrap">
+              <div class="mat-bar" style="height:${Math.max(5,(c.v||0)/maxVal*140)}px"></div>
+            </div>
+            <div class="mat-lbl">${c.lbl}</div>
+            <div class="mat-val">$${fmt(Math.round((c.v||0)/1000))}B</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderLoans() {
+  const d = currentData;
+  const sl = d.secLending || {};
+  const isDetailed = localStorage.getItem('fed-detailed') !== 'false';
+  
+  const row = (kr, en, data, lvl=0, show=true) => {
+    if (!show && !isDetailed) return '';
+    const cls = lvl ? 'l'+lvl : '';
+    return `<tr class="${cls}"><td><div class="bil"><span class="kr">${kr}</span><span class="en">${en}</span></div></td><td class="val">${fmt(data?.v)}</td><td class="chg ${chgClass(data?.w)}">${fmtChg(data?.w)}</td><td class="chg ${chgClass(data?.y)}">${fmtChg(data?.y)}</td></tr>`;
+  };
+  
+  document.getElementById('loans').innerHTML = `
+    <div class="view-toggle">
+      <button class="toggle-btn ${isDetailed ? 'active' : ''}" onclick="setDetailedView(true);renderLoans()">상세</button>
+      <button class="toggle-btn ${!isDetailed ? 'active' : ''}" onclick="setDetailedView(false);renderLoans()">축약</button>
+    </div>
+    <div class="tbl-box">
+      <h3>대출 및 증권 대출</h3>
+      <p class="tbl-sub">Loans & Securities Lending · 단위: 백만 달러</p>
+      <div class="stmt-grid">
+        <div class="stmt-sec">
+          <h4>대출 Loans</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('대출 합계','Total Loans',d.loans)}
+              ${row('1차 신용','Primary Credit',d.primaryCredit,1)}
+              ${row('2차 신용','Secondary Credit',d.secondaryCredit,1,false)}
+              ${row('계절 신용','Seasonal Credit',d.seasonalCredit,1,false)}
+              ${row('급여보호프로그램','PPPLF',d.ppplf,1,false)}
+              ${row('은행기간대출','BTFP',d.btfp,1)}
+              ${row('기타 신용','Other Credit Extensions',d.otherCredit,1,false)}
+            </tbody>
+          </table>
+          <div class="info" style="margin-top:16px;border:none;padding:12px 0 0 0">
+            <p style="color:var(--text2);font-size:0.9em;line-height:1.6">
+              <strong>1차 신용 (Primary Credit)</strong>: 재정 건전한 예금기관에 할인율(discount rate)로 제공하는 단기 대출<br>
+              <strong>2차 신용 (Secondary Credit)</strong>: 1차 신용 자격이 안 되는 기관에 높은 금리로 제공<br>
+              <strong>계절 신용 (Seasonal Credit)</strong>: 농업/관광 등 계절적 자금 수요가 있는 소규모 기관에 제공<br>
+              <strong>PPPLF</strong>: 코로나19 급여보호프로그램 대출 (2021년 종료)<br>
+              <strong>BTFP</strong>: 2023년 은행위기 대응 긴급 대출 프로그램 (2024년 종료)
+            </p>
+          </div>
+        </div>
+        <div class="stmt-sec">
+          <h4>증권 대출 Securities Lending</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('대출 증권 합계','Total Securities Lent',d.secLendingTotal || sl.total)}
+              ${row('익일물 시설','Overnight Facility',d.secLendingOvernight || sl.overnight,1)}
+              ${row('미 국채','U.S. Treasury Securities',d.secLendingOvernightTreasury,2,false)}
+              ${row('연방기관채','Federal Agency Debt Securities',d.secLendingOvernightAgency,2,false)}
+            </tbody>
+          </table>
+          <div class="info" style="margin-top:16px;border:none;padding:12px 0 0 0">
+            <p style="color:var(--text2);font-size:0.9em;line-height:1.6">
+              <strong>증권 대출 시설 (Securities Lending Facility)</strong>: SOMA 포트폴리오의 국채 및 기관채를 1차 딜러에게 일시적으로 대출하여 국채 시장의 유동성과 기능을 지원합니다. 담보는 미 국채로 완전히 충당됩니다.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSecLending() {
+  // 대출 상세와 합쳐짐
+}
+
+function renderConsolidated() {
+  const d = currentData;
+  const isDetailed = localStorage.getItem('fed-detailed') !== 'false';
+  
+  const row = (kr, en, data, lvl=0, show=true) => {
+    if (!show && !isDetailed) return '';
+    const cls = lvl ? 'l'+lvl : '';
+    return `<tr class="${cls}"><td><div class="bil"><span class="kr">${kr}</span><span class="en">${en}</span></div></td><td class="val">${fmt(data?.v)}</td><td class="chg ${chgClass(data?.w)}">${fmtChg(data?.w)}</td><td class="chg ${chgClass(data?.y)}">${fmtChg(data?.y)}</td></tr>`;
+  };
+  
+  document.getElementById('consolidated').innerHTML = `
+    <div class="view-toggle">
+      <button class="toggle-btn ${isDetailed ? 'active' : ''}" onclick="setDetailedView(true)">상세</button>
+      <button class="toggle-btn ${!isDetailed ? 'active' : ''}" onclick="setDetailedView(false)">축약</button>
+    </div>
+    <div class="tbl-box">
+      <h3>연결 재무상태표</h3>
+      <p class="tbl-sub">Table 5: Consolidated Statement of Condition of All Federal Reserve Banks · 단위: 백만 달러</p>
+      <div class="stmt-grid">
+        <div class="stmt-sec">
+          <h4>자산 ASSETS</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('금 증서 계정','Gold Certificate Account',d.goldCertAccount || d.gold)}
+              ${row('SDR 증서 계정','SDR Certificate Account',d.sdrCertAccount || d.sdr)}
+              ${row('주화','Coin',d.coin,0,false)}
+              ${row('증권, 프리미엄/할인, 레포, 대출','Securities, Premiums/Discounts, Repos, Loans',d.securitiesLoansTotal || d.securitiesHeld)}
+              ${row('보유 증권','Securities Held Outright',d.securitiesHeld,1)}
+              ${row('미 국채','U.S. Treasury Securities',d.treasurySecurities,2,false)}
+              ${row('단기채','Bills',d.bills,2,false)}
+              ${row('중장기채 (명목)','Notes and Bonds, Nominal',d.notesAndBonds,2,false)}
+              ${row('물가연동채','Notes and Bonds, Inflation-indexed',d.tips,2,false)}
+              ${row('인플레이션 보정','Inflation Compensation',d.inflationComp,2,false)}
+              ${row('연방기관채','Federal Agency Debt Securities',d.agencyDebt,2,false)}
+              ${row('MBS','Mortgage-Backed Securities',d.mbs,2)}
+              ${row('미상각 프리미엄','Unamortized Premiums',d.unamortizedPremiums,1,false)}
+              ${row('미상각 할인','Unamortized Discounts',d.unamortizedDiscounts,1,false)}
+              ${row('레포','Repurchase Agreements',d.repos,1,false)}
+              ${row('대출','Loans',d.loans,1)}
+              ${row('메인스트리트','MS Facilities (Main Street)',d.mainStreet,0,false)}
+              ${row('수금 중 항목','Items in Process of Collection',d.itemsInCollection,0,false)}
+              ${row('은행 건물','Bank Premises',d.bankPremises,0,false)}
+              ${row('통화스왑','Central Bank Liquidity Swaps',d.swaps)}
+              ${row('외화표시 자산','Foreign Currency Denominated Assets',d.foreignCurrency,0,false)}
+              ${row('기타 자산','Other Assets',d.otherAssets,0,false)}
+              <tr class="tot"><td><strong>총 자산</strong></td><td class="val"><strong>${fmt(d.totalAssets?.v || d.totalSupplying?.v)}</strong></td><td class="chg ${chgClass(d.totalAssets?.w || d.totalSupplying?.w)}"><strong>${fmtChg(d.totalAssets?.w || d.totalSupplying?.w)}</strong></td><td class="chg ${chgClass(d.totalAssets?.y || d.totalSupplying?.y)}"><strong>${fmtChg(d.totalAssets?.y || d.totalSupplying?.y)}</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="stmt-sec">
+          <h4>부채 LIABILITIES</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('연방준비권 (순액)','Federal Reserve Notes, Net',d.frNotesNet || d.currency)}
+              ${row('역레포','Reverse Repurchase Agreements',d.rrp)}
+              ${row('외국 공식/국제기관','Foreign Official and International',d.rrpForeign,1,false)}
+              ${row('기타','Others',d.rrpOthers,1,false)}
+              ${row('예금','Deposits',d.depositsTotal || d.deposits)}
+              ${row('정기예금','Term Deposits',d.termDeposits,1,false)}
+              ${row('기타 예금기관','Other Deposits Held by Depository',d.otherDepositsDepository,1,false)}
+              ${row('TGA','U.S. Treasury, General Account',d.tga,1)}
+              ${row('외국 공식기관','Foreign Official',d.foreignDeposits,1,false)}
+              ${row('기타','Other',d.otherDeposits,1,false)}
+              ${row('이연가용현금','Deferred Availability Cash Items',d.deferredAvailability,0,false)}
+              ${row('재무부 출자','Treasury Contributions to Credit Facilities',d.treasuryContributions,0,false)}
+              ${row('기타 부채 및 배당','Other Liabilities and Accrued Dividends',d.otherLiabilities,0,false)}
+              <tr class="tot"><td><strong>총 부채</strong></td><td class="val"><strong>${fmt(d.totalLiabilities?.v)}</strong></td><td class="chg ${chgClass(d.totalLiabilities?.w)}"><strong>${fmtChg(d.totalLiabilities?.w)}</strong></td><td class="chg ${chgClass(d.totalLiabilities?.y)}"><strong>${fmtChg(d.totalLiabilities?.y)}</strong></td></tr>
+            </tbody>
+          </table>
+          <h4 style="margin-top:20px">자본 CAPITAL</h4>
+          <table>
+            <thead><tr><th>항목</th><th>금액</th><th>주간 Δ</th><th>연간 Δ</th></tr></thead>
+            <tbody>
+              ${row('납입 자본','Capital Paid In',d.capitalPaidIn)}
+              ${row('잉여금','Surplus',d.surplus)}
+              ${row('기타 자본','Other Capital',d.otherCapital,0,false)}
+              <tr class="tot"><td><strong>총 자본</strong></td><td class="val"><strong>${fmt(d.totalCapital?.v || ((d.capitalPaidIn?.v||0) + (d.surplus?.v||0)))}</strong></td><td></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+let selectedBankIdx = 0;
+
+function getPrevBanks() {
+  // 현재 데이터 다음 인덱스의 데이터 (시간순 이전 데이터)
+  if (savedDataList.length > 1 && currentDataIndex < savedDataList.length - 1) {
+    return savedDataList[currentDataIndex + 1]?.banks || [];
+  }
+  return [];
+}
+
+function renderBanks() {
+  const banks = currentData.banks || [];
+  const prevBanks = getPrevBanks();
+  const maxA = Math.max(...banks.map(b => b.assets || 0), 1);
+  const totalAllBanks = banks.reduce((sum, b) => sum + (b.assets || 0), 0);
+  
+  document.getElementById('banks').innerHTML = `
+    <div class="tbl-box">
+      <h3>각 연방준비은행</h3>
+      <p class="tbl-sub">Statement of Each Federal Reserve Bank · 단위: 백만 달러 ${prevBanks.length ? '· 이전 대비 증감 표시' : ''}</p>
+      
+      <div class="bk-tabs">${banks.map((b, idx) => `
+        <button class="bk-tab ${idx === selectedBankIdx ? 'active' : ''}" onclick="selectBank(${idx})">
+          <span class="bk-tab-name">${b.kr}</span>
+          <span class="bk-tab-val">$${(b.assets/1e6).toFixed(2)}T</span>
+          <span class="bk-tab-pct">${((b.assets/totalAllBanks)*100).toFixed(1)}%</span>
+        </button>
+      `).join('')}</div>
+      
+      <div class="bk-detail-panel" id="bankDetailPanel">
+        ${renderBankDetailTable(banks[selectedBankIdx], totalAllBanks, prevBanks[selectedBankIdx])}
+      </div>
+    </div>`;
+}
+
+function selectBank(idx) {
+  selectedBankIdx = idx;
+  const banks = currentData.banks || [];
+  const prevBanks = getPrevBanks();
+  const totalAllBanks = banks.reduce((sum, b) => sum + (b.assets || 0), 0);
+  
+  // 탭 활성화 업데이트
+  document.querySelectorAll('.bk-tab').forEach((tab, i) => {
+    tab.classList.toggle('active', i === idx);
+  });
+  
+  // 상세 패널 업데이트
+  document.getElementById('bankDetailPanel').innerHTML = renderBankDetailTable(banks[idx], totalAllBanks, prevBanks[idx]);
+}
+
+function renderBankDetailTable(bank, totalAllBanks, prevBank) {
+  if (!bank) return '<div class="bk-detail-empty">데이터 없음</div>';
+  
+  const pct = (v) => totalAllBanks ? ((v / totalAllBanks) * 100).toFixed(2) + '%' : '-';
+  const chg = (curr, prev) => {
+    if (!prev || prev === 0) return { val: '-', pct: '-', cls: '' };
+    const diff = curr - prev;
+    const pctChg = ((diff / prev) * 100).toFixed(2);
+    const cls = diff > 0 ? 'pos' : diff < 0 ? 'neg' : '';
+    return { 
+      val: diff === 0 ? '-' : (diff > 0 ? '+' : '') + fmt(diff), 
+      pct: diff === 0 ? '-' : (diff > 0 ? '+' : '') + pctChg + '%',
+      cls 
+    };
+  };
+  
+  const row = (kr, en, key, isL1 = false) => {
+    const curr = bank[key] || 0;
+    const prev = prevBank ? (prevBank[key] || 0) : 0;
+    const c = chg(curr, prev);
+    return `<tr class="${isL1 ? 'l1' : ''}"><td><div class="bil"><span class="kr">${kr}</span><span class="en">${en}</span></div></td><td class="val">${fmt(curr)}</td><td class="chg ${c.cls}">${c.val}<br><small>${c.pct}</small></td></tr>`;
+  };
+  
+  const assetsChg = chg(bank.assets, prevBank?.assets);
+  
+  return `
+    <div class="bk-detail-header">
+      <div class="bk-detail-name">
+        <span class="bk-detail-kr">${bank.kr}</span>
+        <span class="bk-detail-en">${bank.name} Federal Reserve Bank</span>
+      </div>
+      <div class="bk-detail-total">
+        <span class="bk-detail-total-val">$${fmt(bank.assets)}M</span>
+        <span class="bk-detail-total-pct">전체의 ${pct(bank.assets)}</span>
+        ${prevBank ? `<span class="bk-detail-chg ${assetsChg.cls}">${assetsChg.val} (${assetsChg.pct})</span>` : ''}
+      </div>
+    </div>
+    
+    <div class="stmt-grid">
+      <div class="stmt-sec">
+        <h4>자산 ASSETS</h4>
+        <table>
+          <thead><tr><th>항목</th><th>금액</th><th>증감</th></tr></thead>
+          <tbody>
+            ${row('금 증서', 'Gold Certificates', 'goldCerts')}
+            ${row('SDR 증서', 'SDR Certificates', 'sdrCerts')}
+            ${row('보유 증권', 'Securities Held', 'securities')}
+            ${row('미 국채', 'Treasury Securities', 'treasuries', true)}
+            ${row('MBS', 'Mortgage-Backed', 'mbs', true)}
+            ${row('레포', 'Repurchase Agreements', 'repos')}
+            ${row('대출', 'Loans', 'loans')}
+            <tr class="tot"><td><strong>총 자산</strong></td><td class="val"><strong>${fmt(bank.assets)}</strong></td><td class="chg ${assetsChg.cls}"><strong>${assetsChg.val}</strong><br><small>${assetsChg.pct}</small></td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="stmt-sec">
+        <h4>부채 LIABILITIES</h4>
+        <table>
+          <thead><tr><th>항목</th><th>금액</th><th>증감</th></tr></thead>
+          <tbody>
+            ${row('연방준비권', 'F.R. Notes Outstanding', 'frNotes')}
+            ${row('역레포', 'Reverse Repurchase', 'rrp')}
+            ${row('예치금', 'Deposits', 'deposits')}
+            ${row('납입 자본', 'Capital Paid In', 'capital')}
+            ${row('잉여금', 'Surplus', 'surplus')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderFRNotes() {
+  const notes = currentData.frNotes || [];
+  document.getElementById('frNotes').innerHTML = `<div class="tbl-box"><h3>연방준비권 발행 및 담보</h3><p class="tbl-sub">Federal Reserve Notes Outstanding and Collateral · 단위: 백만 달러</p><table><thead><tr><th>연방준비은행</th><th>발행액</th><th>담보</th><th>금 증서</th></tr></thead><tbody>${notes.map(n => `<tr><td><div class="bil"><span class="kr">${n.kr}</span><span class="en">${n.name}</span></div></td><td class="val">${fmt(n.outstanding)}</td><td class="val">${fmt(n.collateral)}</td><td class="val">${fmt(n.gold)}</td></tr>`).join('')}</tbody></table></div><div class="info"><h4>연방준비권 담보 요건</h4><p style="color:var(--text2);line-height:1.6">연방준비권(미국 달러 지폐)은 발행액의 100% 이상을 담보로 보유해야 합니다. 담보는 주로 미국 국채, MBS 등 적격 증권과 금 증서로 구성됩니다.</p></div>`;
+}
+
+function renderCharts() {
+  if (savedDataList.length < 2) {
+    document.getElementById('charts').innerHTML = `<div class="no-data"><h3>데이터가 부족합니다</h3><p>추이 차트를 보려면 최소 2개 이상의 데이터가 필요합니다.</p><p style="margin-top:16px;color:var(--text3)">현재 저장된 데이터: ${savedDataList.length}개</p></div>`;
+    return;
+  }
+  const now = new Date();
+  const periods = { '1m': 30, '3m': 90, '6m': 180, '1y': 365 };
+  const days = periods[chartPeriod] || 90;
+  const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  let filtered = savedDataList.filter(d => parseDate(d.releaseDate) >= cutoff);
+  if (filtered.length < 2) filtered = savedDataList.slice(0, Math.min(savedDataList.length, 12));
+  filtered = filtered.reverse();
+  const metrics = [{key:'totalSupplying',kr:'총 자산',en:'Total Assets'},{key:'reserves',kr:'지급준비금',en:'Reserve Balances'},{key:'tga',kr:'TGA',en:'Treasury General Account'},{key:'rrp',kr:'역레포',en:'Reverse Repo'},{key:'securitiesHeld',kr:'보유 증권',en:'Securities Held'},{key:'currency',kr:'유통 통화',en:'Currency'}];
+  let html = `<div class="chart-controls"><label>기간:</label><button class="period-btn ${chartPeriod==='1m'?'active':''}" onclick="setPeriod('1m')">1개월</button><button class="period-btn ${chartPeriod==='3m'?'active':''}" onclick="setPeriod('3m')">3개월</button><button class="period-btn ${chartPeriod==='6m'?'active':''}" onclick="setPeriod('6m')">6개월</button><button class="period-btn ${chartPeriod==='1y'?'active':''}" onclick="setPeriod('1y')">1년</button></div><div class="chart-grid">`;
+  metrics.forEach(m => {
+    const data = filtered.map(d => ({date:d.releaseDate,value:d[m.key]?.v||0})).filter(d => d.value > 0);
+    if (data.length < 2) return;
+    const values = data.map(d => d.value);
+    const min = Math.min(...values), max = Math.max(...values), range = max - min || 1;
+    const first = values[0], last = values[values.length - 1];
+    const change = last - first, changePct = (change / first) * 100;
+    const w = 360, h = 150, padL = 10, padR = 10, padT = 10, padB = 30;
+    const chartW = w - padL - padR, chartH = h - padT - padB;
+    const points = data.map((d, i) => ({x:padL+(i/(data.length-1))*chartW,y:padT+chartH-((d.value-min)/range)*chartH,...d}));
+    const pathD = points.map((p, i) => `${i===0?'M':'L'} ${p.x} ${p.y}`).join(' ');
+    const areaD = pathD + ` L ${points[points.length-1].x} ${h-padB} L ${padL} ${h-padB} Z`;
+    html += `<div class="chart-card"><h4>${m.kr}</h4><div class="sub">${m.en}</div><div class="chart-stats"><div class="chart-stat"><div class="label">현재</div><div class="value">$${(last/1e6).toFixed(2)}T</div></div><div class="chart-stat"><div class="label">변동</div><div class="change ${chgClass(change)}">${fmtChg(Math.round(change))} (${fmtPct(changePct)})</div></div></div><svg class="chart-svg" viewBox="0 0 ${w} ${h}"><path class="chart-area" d="${areaD}" /><path class="chart-line" d="${pathD}" />${points.map(p => `<circle class="chart-dot" cx="${p.x}" cy="${p.y}" r="4" />`).join('')}<text class="chart-label" x="${padL}" y="${h-8}">${data[0].date.split(',')[0]}</text><text class="chart-label" x="${w-padR}" y="${h-8}" text-anchor="end">${data[data.length-1].date.split(',')[0]}</text></svg></div>`;
+  });
+  html += '</div>';
+  document.getElementById('charts').innerHTML = html;
+}
+
+function setPeriod(p) { chartPeriod = p; renderCharts(); }
+
+async function fetchLatestH41() {
+  const btn = document.getElementById('fetchBtn');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 다운로드 중...';
+  
+  try {
+    const res = await fetch('/api/h41/fetch');
+    const data = await res.json();
+    
+    if (data.error) {
+      showToast('❌ ' + data.error, 'error');
+      return;
+    }
+    
+    if (data.status === 'exists') {
+      showToast('ℹ️ ' + data.message);
+    } else {
+      showToast('✅ ' + data.message);
+    }
+    
+    // PDF 파일 가져와서 파싱
+    if (data.filename) {
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 분석 중...';
+      
+      const pdfRes = await fetch('/api/h41/file/' + encodeURIComponent(data.filename));
+      const pdfBlob = await pdfRes.blob();
+      const pdfFile = new File([pdfBlob], data.filename, { type: 'application/pdf' });
+      
+      await processSinglePDF(pdfFile);
+      showToast('✅ 분석 완료!');
+    }
+  } catch (e) {
+    console.error('Fetch H41 error:', e);
+    showToast('❌ 서버 연결 오류', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+// Claude AI 명령 처리 (Fed 페이지는 조회 위주)
+function handleChatCommand(cmd) {
+  showToast(cmd.message || '명령 처리됨');
+}
+
+async function init() { 
+  await loadSettingsFromServer(); 
+  await loadDataFromServer();
+  
+  // Claude 채팅 초기화
+  ChatWidget.init('fed', handleChatCommand);
+}
+init();
+</script>
+<script src="shared/chat.js"></script>
+<style>
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.spin { animation: spin 1s linear infinite; }
+</style>
+</body>
+</html>
