@@ -1,6 +1,6 @@
 {
-  "version": "v4.2.1",
+  "version": "v4.2.2",
   "date": "2026-01-17",
-  "notes": "파싱 오류 해결",
+  "notes": "흡수 요인 파싱 오류 해결",
   "downloadUrl": "https://github.com/sntaind/Fed-Reserve-Balance-Sheet/releases"
 }
